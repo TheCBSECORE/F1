@@ -16,27 +16,27 @@
 
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.7)); z-index: -5; }
 
-        .container { padding: 25px; height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; z-index: 10; }
+        .container { padding: 25px; height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; z-index: 10; max-width: 650px; margin: 0 auto; }
         
         .header { border-left: 4px solid var(--f1-red); padding-left: 15px; margin-bottom: 20px; }
         .header p { margin: 0; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 2px; color: #aaa; }
-        .header h1 { margin: 5px 0; font-size: 2.8rem; text-transform: uppercase; line-height: 1; }
-        .full-name { font-size: 0.85rem !important; color: #888 !important; letter-spacing: 0 !important; }
+        .header h1 { margin: 5px 0; font-size: 2.5rem; text-transform: uppercase; line-height: 1; }
+        .full-name { font-size: 0.82rem !important; color: #888 !important; letter-spacing: 0 !important; }
 
         .session-row {
             display: flex; justify-content: space-between; align-items: center;
-            background: rgba(255, 255, 255, 0.08); padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.08); padding: 10px 18px;
             margin-bottom: 8px; border-radius: 4px; backdrop-filter: blur(8px);
         }
 
-        .name { font-weight: 800; text-transform: uppercase; font-size: 1rem; }
+        .name { font-weight: 800; text-transform: uppercase; font-size: 0.95rem; }
         .ist { color: #888; font-size: 0.75rem; margin-top: 2px; }
-        .timer { font-family: monospace; color: var(--f1-red); font-size: 1.2rem; font-weight: bold; }
+        .timer { font-family: monospace; color: var(--f1-red); font-size: 1.15rem; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <video autoplay muted loop playsinline id="video-bg">
+    <video autoplay border="0" muted loop playsinline id="video-bg">
         <source src="For1.mp4" type="video/mp4">
     </video>
     <div class="overlay"></div>
@@ -45,38 +45,80 @@
 
     <script>
         const cal = [
+            { r: 1, loc: "Australia", full: "FORMULA 1 QATAR AIRWAYS AUSTRALIAN GRAND PRIX 2026", date: "06-08 MAR", sessions: [
+                {n:"Practice 1", t:"2026-03-06T07:00:00+05:30"}, {n:"Practice 2", t:"2026-03-06T10:30:00+05:30"},
+                {n:"Practice 3", t:"2026-03-07T07:00:00+05:30"}, {n:"Qualifying", t:"2026-03-07T10:30:00+05:30"}, {n:"Race", t:"2026-03-08T09:30:00+05:30"}]},
+            { r: 2, loc: "China", full: "FORMULA 1 HEINEKEN CHINESE GRAND PRIX 2026", date: "13-15 MAR", sessions: [
+                {n:"Practice 1", t:"2026-03-13T09:00:00+05:30"}, {n:"Sprint Qualy", t:"2026-03-13T13:00:00+05:30"},
+                {n:"Sprint", t:"2026-03-14T08:30:00+05:30"}, {n:"Qualifying", t:"2026-03-14T12:30:00+05:30"}, {n:"Race", t:"2026-03-15T12:30:00+05:30"}]},
+            { r: 3, loc: "Japan", full: "FORMULA 1 ARAMCO JAPANESE GRAND PRIX 2026", date: "27-29 MAR", sessions: [
+                {n:"Practice 1", t:"2026-03-27T08:00:00+05:30"}, {n:"Practice 2", t:"2026-03-27T11:30:00+05:30"},
+                {n:"Practice 3", t:"2026-03-28T08:00:00+05:30"}, {n:"Qualifying", t:"2026-03-28T11:30:00+05:30"}, {n:"Race", t:"2026-03-29T10:30:00+05:30"}]},
             { r: 4, loc: "Miami", full: "FORMULA 1 CRYPTO.COM MIAMI GRAND PRIX 2026", date: "01-03 MAY", sessions: [
-                {n:"Practice 1", t:"2026-05-01T21:00:00+05:30"}, {n:"Sprint Qualy", t:"2026-05-02T01:00:00+05:30"}, 
-                {n:"Sprint", t:"2026-05-02T20:30:00+05:30"}, {n:"Qualifying", t:"2026-05-03T00:30:00+05:30"}, {n:"Race", t:"2026-05-04T01:30:00+05:30"}]},
+                {n:"Practice 1", t:"2026-05-01T22:00:00+05:30"}, {n:"Sprint Qualy", t:"2026-05-02T02:00:00+05:30"},
+                {n:"Sprint", t:"2026-05-02T21:30:00+05:30"}, {n:"Qualifying", t:"2026-05-03T01:30:00+05:30"}, {n:"Race", t:"2026-05-03T22:30:00+05:30"}]},
             { r: 5, loc: "Canada", full: "FORMULA 1 LENOVO GRAND PRIX DU CANADA 2026", date: "22-24 MAY", sessions: [
-                {n:"Practice 1", t:"2026-05-22T21:00:00+05:30"}, {n:"Sprint Qualy", t:"2026-05-23T01:00:00+05:30"}, 
-                {n:"Sprint", t:"2026-05-23T20:30:00+05:30"}, {n:"Qualifying", t:"2026-05-24T00:30:00+05:30"}, {n:"Race", t:"2026-05-25T01:30:00+05:30"}]},
+                {n:"Practice 1", t:"2026-05-22T22:30:00+05:30"}, {n:"Sprint Qualy", t:"2026-05-23T02:30:00+05:30"},
+                {n:"Sprint", t:"2026-05-23T22:00:00+05:30"}, {n:"Qualifying", t:"2026-05-24T02:00:00+05:30"}, {n:"Race", t:"2026-05-25T01:30:00+05:30"}]},
             { r: 6, loc: "Monaco", full: "FORMULA 1 LOUIS VUITTON GRAND PRIX DE MONACO 2026", date: "05-07 JUN", sessions: [
-                {n:"Practice 1", t:"2026-06-05T17:00:00+05:30"}, {n:"Qualifying", t:"2026-06-06T19:30:00+05:30"}, {n:"Race", t:"2026-06-07T18:30:00+05:30"}]},
-            { r: 7, loc: "Barcelona", full: "FORMULA 1 MSC CRUISES GRAN PREMIO DE BARCELONA 2026", date: "12-14 JUN", sessions: [
-                {n:"Qualifying", t:"2026-06-13T19:30:00+05:30"}, {n:"Race", t:"2026-06-14T18:30:00+05:30"}]},
+                {n:"Practice 1", t:"2026-06-05T17:00:00+05:30"}, {n:"Practice 2", t:"2026-06-05T20:30:00+05:30"},
+                {n:"Practice 3", t:"2026-06-06T16:00:00+05:30"}, {n:"Qualifying", t:"2026-06-06T19:30:00+05:30"}, {n:"Race", t:"2026-06-07T18:30:00+05:30"}]},
+            { r: 7, loc: "Barcelona", full: "FORMULA 1 MSC CRUISES GRAN PREMIO DE BARCELONA-CATALUNYA 2026", date: "12-14 JUN", sessions: [
+                {n:"Practice 1", t:"2026-06-12T17:00:00+05:30"}, {n:"Practice 2", t:"2026-06-12T20:30:00+05:30"},
+                {n:"Practice 3", t:"2026-06-13T16:00:00+05:30"}, {n:"Qualifying", t:"2026-06-13T19:30:00+05:30"}, {n:"Race", t:"2026-06-14T18:30:00+05:30"}]},
             { r: 8, loc: "Austria", full: "FORMULA 1 LENOVO AUSTRIAN GRAND PRIX 2026", date: "26-28 JUN", sessions: [
-                {n:"Race", t:"2026-06-28T18:30:00+05:30"}]},
+                {n:"Practice 1", t:"2026-06-26T17:00:00+05:30"}, {n:"Practice 2", t:"2026-06-26T20:30:00+05:30"},
+                {n:"Practice 3", t:"2026-06-27T16:00:00+05:30"}, {n:"Qualifying", t:"2026-06-27T19:30:00+05:30"}, {n:"Race", t:"2026-06-28T18:30:00+05:30"}]},
             { r: 9, loc: "Great Britain", full: "FORMULA 1 PIRELLI BRITISH GRAND PRIX 2026", date: "03-05 JUL", sessions: [
-                {n:"Race", t:"2026-07-05T19:30:00+05:30"}]},
-            { r: 10, loc: "Belgium", full: "FORMULA 1 BELGIAN GRAND PRIX 2026", date: "17-19 JUL", sessions: [{n:"Race", t:"2026-07-19T18:30:00+05:30"}]},
-            { r: 11, loc: "Hungary", full: "FORMULA 1 AWS HUNGARIAN GRAND PRIX 2026", date: "24-26 JUL", sessions: [{n:"Race", t:"2026-07-26T18:30:00+05:30"}]},
-            { r: 12, loc: "Netherlands", full: "FORMULA 1 DUTCH GRAND PRIX 2026", date: "21-23 AUG", sessions: [{n:"Race", t:"2026-08-23T18:30:00+05:30"}]},
-            { r: 13, loc: "Italy", full: "FORMULA 1 PIRELLI GRAN PREMIO D’ITALIA 2026", date: "04-06 SEP", sessions: [{n:"Race", t:"2026-09-06T18:30:00+05:30"}]},
-            { r: 14, loc: "Spain (Madrid)", full: "FORMULA 1 TAG HEUER GRAN PREMIO DE ESPAÑA 2026", date: "11-13 SEP", sessions: [{n:"Race", t:"2026-09-13T18:30:00+05:30"}]},
-            { r: 15, loc: "Azerbaijan", full: "FORMULA 1 AZERBAIJAN GRAND PRIX 2026", date: "24-26 SEP", sessions: [{n:"Race", t:"2026-09-26T16:30:00+05:30"}]},
-            { r: 16, loc: "Singapore", full: "FORMULA 1 SINGAPORE AIRLINES GRAND PRIX 2026", date: "09-11 OCT", sessions: [{n:"Race", t:"2026-10-11T17:30:00+05:30"}]},
-            { r: 17, loc: "United States", full: "FORMULA 1 UNITED STATES GRAND PRIX 2026", date: "23-25 OCT", sessions: [{n:"Race", t:"2026-10-26T01:30:00+05:30"}]},
-            { r: 18, loc: "Mexico", full: "FORMULA 1 GRAN PREMIO DE MÉXICO 2026", date: "30 OCT - 01 NOV", sessions: [{n:"Race", t:"2026-11-02T01:30:00+05:30"}]},
-            { r: 19, loc: "Brazil", full: "FORMULA 1 GRANDE PRÊMIO DE SÃO PAULO 2026", date: "06-08 NOV", sessions: [{n:"Race", t:"2026-11-08T22:30:00+05:30"}]},
-            { r: 20, loc: "Las Vegas", full: "FORMULA 1 HEINEKEN LAS VEGAS GRAND PRIX 2026", date: "19-21 NOV", sessions: [{n:"Race", t:"2026-11-22T09:30:00+05:30"}]},
-            { r: 21, loc: "Qatar", full: "FORMULA 1 QATAR AIRWAYS QATAR GRAND PRIX 2026", date: "27-29 NOV", sessions: [{n:"Race", t:"2026-11-29T21:30:00+05:30"}]},
-            { r: 22, loc: "Abu Dhabi", full: "FORMULA 1 ETIHAD AIRWAYS ABU DHABI GRAND PRIX 2026", date: "04-06 DEC", sessions: [{n:"Race", t:"2026-12-06T18:30:00+05:30"}]}
+                {n:"Practice 1", t:"2026-07-03T17:00:00+05:30"}, {n:"Practice 2", t:"2026-07-03T20:30:00+05:30"},
+                {n:"Practice 3", t:"2026-07-04T16:00:00+05:30"}, {n:"Qualifying", t:"2026-07-04T19:30:00+05:30"}, {n:"Race", t:"2026-07-05T19:30:00+05:30"}]},
+            { r: 10, loc: "Belgium", full: "FORMULA 1 MOËT & CHANDON BELGIAN GRAND PRIX 2026", date: "17-19 JUL", sessions: [
+                {n:"Practice 1", t:"2026-07-17T17:00:00+05:30"}, {n:"Practice 2", t:"2026-07-17T20:30:00+05:30"},
+                {n:"Practice 3", t:"2026-07-18T16:00:00+05:30"}, {n:"Qualifying", t:"2026-07-18T19:30:00+05:30"}, {n:"Race", t:"2026-07-19T18:30:00+05:30"}]},
+            { r: 11, loc: "Hungary", full: "FORMULA 1 AWS HUNGARIAN GRAND PRIX 2026", date: "24-26 JUL", sessions: [
+                {n:"Practice 1", t:"2026-07-24T17:00:00+05:30"}, {n:"Practice 2", t:"2026-07-24T20:30:00+05:30"},
+                {n:"Practice 3", t:"2026-07-25T16:00:00+05:30"}, {n:"Qualifying", t:"2026-07-25T19:30:00+05:30"}, {n:"Race", t:"2026-07-26T18:30:00+05:30"}]},
+            { r: 12, loc: "Netherlands", full: "FORMULA 1 HEINEKEN DUTCH GRAND PRIX 2026", date: "21-23 AUG", sessions: [
+                {n:"Practice 1", t:"2026-08-21T16:00:00+05:30"}, {n:"Sprint Qualy", t:"2026-08-21T20:00:00+05:30"},
+                {n:"Sprint", t:"2026-08-22T15:30:00+05:30"}, {n:"Qualifying", t:"2026-08-22T19:30:00+05:30"}, {n:"Race", t:"2026-08-23T18:30:00+05:30"}]},
+            { r: 13, loc: "Italy", full: "FORMULA 1 PIRELLI GRAN PREMIO D’ITALIA 2026", date: "04-06 SEP", sessions: [
+                {n:"Practice 1", t:"2026-09-04T17:00:00+05:30"}, {n:"Practice 2", t:"2026-09-04T20:30:00+05:30"},
+                {n:"Practice 3", t:"2026-09-05T16:00:00+05:30"}, {n:"Qualifying", t:"2026-09-05T19:30:00+05:30"}, {n:"Race", t:"2026-09-06T18:30:00+05:30"}]},
+            { r: 14, loc: "Spain (Madrid)", full: "FORMULA 1 TAG HEUER GRAN PREMIO DE ESPAÑA 2026", date: "11-13 SEP", sessions: [
+                {n:"Practice 1", t:"2026-09-11T17:00:00+05:30"}, {n:"Practice 2", t:"2026-09-11T20:30:00+05:30"},
+                {n:"Practice 3", t:"2026-09-12T16:00:00+05:30"}, {n:"Qualifying", t:"2026-09-12T19:30:00+05:30"}, {n:"Race", t:"2026-09-13T18:30:00+05:30"}]},
+            { r: 15, loc: "Azerbaijan", full: "FORMULA 1 QATAR AIRWAYS AZERBAIJAN GRAND PRIX 2026", date: "24-26 SEP", sessions: [
+                {n:"Practice 1", t:"2026-09-24T14:00:00+05:30"}, {n:"Practice 2", t:"2026-09-24T17:30:00+05:30"},
+                {n:"Practice 3", t:"2026-09-25T14:00:00+05:30"}, {n:"Qualifying", t:"2026-09-25T17:30:00+05:30"}, {n:"Race", t:"2026-09-26T16:30:00+05:30"}]},
+            { r: 16, loc: "Bahrain (Sepang)", full: "FORMULA 1 GULF AIR BAHRAIN GRAND PRIX IN MALAYSIA 2026", date: "02-04 OCT", sessions: [
+                {n:"Practice 1", t:"2026-10-02T14:30:00+05:30"}, {n:"Practice 2", t:"2026-10-02T18:00:00+05:30"},
+                {n:"Practice 3", t:"2026-10-03T15:30:00+05:30"}, {n:"Qualifying", t:"2026-10-03T19:00:00+05:30"}, {n:"Race", t:"2026-10-04T20:30:00+05:30"}]},
+            { r: 17, loc: "Singapore", full: "FORMULA 1 SINGAPORE AIRLINES SINGAPORE GRAND PRIX 2026", date: "09-11 OCT", sessions: [
+                {n:"Practice 1", t:"2026-10-09T14:30:00+05:30"}, {n:"Sprint Qualy", t:"2026-10-09T18:30:00+05:30"},
+                {n:"Sprint", t:"2026-10-10T15:00:00+05:30"}, {n:"Qualifying", t:"2026-10-10T18:30:00+05:30"}, {n:"Race", t:"2026-10-11T17:30:00+05:30"}]},
+            { r: 18, loc: "United States", full: "FORMULA 1 MSC CRUISES UNITED STATES GRAND PRIX 2026", date: "23-25 OCT", sessions: [
+                {n:"Practice 1", t:"2026-10-23T23:00:00+05:30"}, {n:"Practice 2", t:"2026-10-24T02:30:00+05:30"},
+                {n:"Practice 3", t:"2026-10-24T22:30:00+05:30"}, {n:"Qualifying", t:"2026-10-25T02:00:00+05:30"}, {n:"Race", t:"2026-10-26T01:30:00+05:30"}]},
+            { r: 19, loc: "Mexico", full: "FORMULA 1 GRAN PREMIO DE LA CIUDAD DE MÉXICO 2026", date: "30 OCT - 01 NOV", sessions: [
+                {n:"Practice 1", t:"2026-10-30T23:00:00+05:30"}, {n:"Practice 2", t:"2026-10-31T02:30:00+05:30"},
+                {n:"Practice 3", t:"2026-10-31T22:00:00+05:30"}, {n:"Qualifying", t:"2026-11-01T01:30:00+05:30"}, {n:"Race", t:"2026-11-02T01:30:00+05:30"}]},
+            { r: 20, loc: "Brazil", full: "FORMULA 1 MSC CRUISES GRANDE PRÊMIO DE SÃO PAULO 2026", date: "06-08 NOV", sessions: [
+                {n:"Practice 1", t:"2026-11-06T20:00:00+05:30"}, {n:"Practice 2", t:"2026-11-06T23:30:00+05:30"},
+                {n:"Practice 3", t:"2026-11-07T19:30:00+05:30"}, {n:"Qualifying", t:"2026-11-07T23:00:00+05:30"}, {n:"Race", t:"2026-11-08T22:30:00+05:30"}]},
+            { r: 21, loc: "Las Vegas", full: "FORMULA 1 HEINEKEN LAS VEGAS GRAND PRIX 2026", date: "19-21 NOV", sessions: [
+                {n:"Practice 1", t:"2026-11-20T06:00:00+05:30"}, {n:"Practice 2", t:"2026-11-20T09:30:00+05:30"},
+                {n:"Practice 3", t:"2026-11-21T06:00:00+05:30"}, {n:"Qualifying", t:"2026-11-21T09:30:00+05:30"}, {n:"Race", t:"2026-11-22T09:30:00+05:30"}]},
+            { r: 22, loc: "Qatar", full: "FORMULA 1 QATAR AIRWAYS QATAR GRAND PRIX 2026", date: "27-29 NOV", sessions: [
+                {n:"Practice 1", t:"2026-11-27T19:00:00+05:30"}, {n:"Practice 2", t:"2026-11-27T22:30:00+05:30"},
+                {n:"Practice 3", t:"2026-11-28T19:00:00+05:30"}, {n:"Qualifying", t:"2026-11-28T22:30:00+05:30"}, {n:"Race", t:"2026-11-29T21:30:00+05:30"}]},
+            { r: 23, loc: "Abu Dhabi", full: "FORMULA 1 ETIHAD AIRWAYS ABU DHABI GRAND PRIX 2026", date: "04-06 DEC", sessions: [
+                {n:"Practice 1", t:"2026-12-04T15:00:00+05:30"}, {n:"Practice 2", t:"2026-12-04T18:30:00+05:30"},
+                {n:"Practice 3", t:"2026-12-05T16:00:00+05:30"}, {n:"Qualifying", t:"2026-12-05T19:30:00+05:30"}, {n:"Race", t:"2026-12-06T18:30:00+05:30"}]}
         ];
 
         function up() {
             const now = new Date();
-            const race = cal.find(r => new Date(r.sessions[r.sessions.length-1].t) > now) || cal[cal.length-1];
+            const race = cal.find(r => new Date(r.sessions[r.sessions.length - 1].t) > now) || cal[cal.length - 1];
             
             let html = `<div class="header"><p>ROUND ${race.r} | ${race.date}</p><h1>${race.loc}</h1><p class="full-name">${race.full}</p></div>`;
             race.sessions.forEach(s => {
@@ -84,22 +126,33 @@
                 const diff = target - now;
                 let txt = "LIVE";
                 if (diff > 0) {
-                    const d = Math.floor(diff/86400000), h = Math.floor((diff%86400000)/3600000), m = Math.floor((diff%3600000)/60000), sec = Math.floor((diff%60000)/1000);
-                    txt = `${d}d ${h}h ${m}m ${sec}s`;
-                } else if (diff < -7200000) { txt = "FINISHED"; }
+                    const d = Math.floor(diff / 86400000);
+                    const h = Math.floor((diff % 86400000) / 3600000);
+                    const m = Math.floor((diff % 3600000) / 60000);
+                    const sec = Math.floor((diff % 60000) / 1000);
+                    txt = `${d > 0 ? d + 'd ' : ''}${h}h ${m}m ${sec}s`;
+                } else if (diff < -7200000) { 
+                    txt = "FINISHED"; 
+                }
 
-                html += `<div class="session-row"><div><div class="name">${s.n}</div><div class="ist">${target.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})} IST</div></div><div class="timer">${txt}</div></div>`;
+                html += `<div class="session-row">
+                            <div>
+                                <div class="name">${s.n}</div>
+                                <div class="ist">${target.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} IST</div>
+                            </div>
+                            <div class="timer">${txt}</div>
+                         </div>`;
             });
             document.getElementById('ui').innerHTML = html;
         }
 
-        // Force play video for Notion/Mobile
         window.addEventListener('load', () => { 
             const v = document.getElementById('video-bg');
             v.play().catch(() => { console.log("Autoplay blocked, waiting for interaction"); });
         });
 
-        setInterval(up, 1000); up();
+        setInterval(up, 1000); 
+        up();
     </script>
 </body>
 </html>
