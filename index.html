@@ -8,7 +8,7 @@
         :root { --f1-red: #e10600; --bg-dark: #050505; }
         body, html { margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg-dark); color: white; overflow: hidden; height: 100vh; }
         
-        /* Video Background Fix */
+        /* Video Background */
         #video-bg {
             position: fixed; right: 0; bottom: 0; min-width: 100%; min-height: 100%;
             z-index: -10; filter: brightness(0.35); object-fit: cover;
@@ -16,11 +16,58 @@
 
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.7)); z-index: -5; }
 
-        .container { padding: 25px; height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; z-index: 10; max-width: 650px; margin: 0 auto; }
-        
+        /* App Layout */
+        .app-layout { display: flex; height: 100vh; width: 100vw; box-sizing: border-box; z-index: 10; position: relative; }
+
+        /* Left Scrollable Sidebar */
+        .sidebar {
+            width: 260px;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(12px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            overflow-y: auto;
+            padding: 20px 10px;
+            box-sizing: border-box;
+            flex-shrink: 0;
+            mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+        }
+
+        .sidebar::-webkit-scrollbar { width: 4px; }
+        .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+
+        .sidebar-item {
+            padding: 10px 12px;
+            margin-bottom: 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            font-size: 0.85s;
+        }
+
+        .sidebar-item:hover { background: rgba(255, 255, 255, 0.1); }
+        .sidebar-item.active { background: var(--f1-red); font-weight: bold; }
+        .sidebar-item .round-num { font-size: 0.7rem; text-transform: uppercase; color: #aaa; letter-spacing: 1px; }
+        .sidebar-item.active .round-num { color: #ffcccc; }
+        .sidebar-item .loc-name { font-size: 0.9rem; text-transform: uppercase; font-weight: 700; }
+
+        /* Main Content Container */
+        .main-content {
+            flex-grow: 1;
+            padding: 30px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            max-width: 750px;
+            margin: 0 auto;
+            box-sizing: border-box;
+        }
+
         .header { border-left: 4px solid var(--f1-red); padding-left: 15px; margin-bottom: 20px; }
         .header p { margin: 0; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 2px; color: #aaa; }
-        .header h1 { margin: 5px 0; font-size: 2.5rem; text-transform: uppercase; line-height: 1; }
+        .header h1 { margin: 5px 0; font-size: 2.3rem; text-transform: uppercase; line-height: 1; }
         .full-name { font-size: 0.82rem !important; color: #888 !important; letter-spacing: 0 !important; }
 
         .session-row {
@@ -32,62 +79,85 @@
         .name { font-weight: 800; text-transform: uppercase; font-size: 0.95rem; }
         .ist { color: #888; font-size: 0.75rem; margin-top: 2px; }
         .timer { font-family: monospace; color: var(--f1-red); font-size: 1.15rem; font-weight: bold; }
+
+        /* Standings & Podiums Box */
+        .info-card {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            padding: 15px 20px;
+            backdrop-filter: blur(10px);
+            max-height: 380px;
+            overflow-y: auto;
+        }
+
+        .info-card h3 { margin-top: 0; text-transform: uppercase; font-size: 1rem; color: var(--f1-red); letter-spacing: 1px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; }
+        
+        .podium-list, .standings-list { display: flex; flex-direction: column; gap: 8px; }
+        .podium-item, .standing-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 4px; font-size: 0.9rem; }
+        .pos-badge { font-weight: bold; width: 25px; color: var(--f1-red); }
     </style>
 </head>
 <body>
 
-    <video autoplay border="0" muted loop playsinline id="video-bg">
+    <video autoplay muted loop playsinline id="video-bg">
         <source src="For1.mp4" type="video/mp4">
     </video>
     <div class="overlay"></div>
 
-    <div class="container" id="ui"></div>
+    <div class="app-layout">
+        <!-- Scrollable Left Sidebar -->
+        <div class="sidebar" id="sidebar"></div>
+
+        <!-- Main Dynamic Panel -->
+        <div class="main-content" id="ui"></div>
+    </div>
 
     <script>
         const cal = [
-            { r: 1, loc: "Australia", full: "FORMULA 1 QATAR AIRWAYS AUSTRALIAN GRAND PRIX 2026", date: "06-08 MAR", sessions: [
+            { r: 1, loc: "Australia", full: "FORMULA 1 QATAR AIRWAYS AUSTRALIAN GRAND PRIX 2026", date: "06-08 MAR", podium: ["George Russell", "Andrea Kimi Antonelli", "Charles Leclerc"], sessions: [
                 {n:"Practice 1", t:"2026-03-06T07:00:00+05:30"}, {n:"Practice 2", t:"2026-03-06T10:30:00+05:30"},
                 {n:"Practice 3", t:"2026-03-07T07:00:00+05:30"}, {n:"Qualifying", t:"2026-03-07T10:30:00+05:30"}, {n:"Race", t:"2026-03-08T09:30:00+05:30"}]},
-            { r: 2, loc: "China", full: "FORMULA 1 HEINEKEN CHINESE GRAND PRIX 2026", date: "13-15 MAR", sessions: [
+            { r: 2, loc: "China", full: "FORMULA 1 HEINEKEN CHINESE GRAND PRIX 2026", date: "13-15 MAR", podium: ["Andrea Kimi Antonelli", "George Russell", "Lewis Hamilton"], sessions: [
                 {n:"Practice 1", t:"2026-03-13T09:00:00+05:30"}, {n:"Sprint Qualy", t:"2026-03-13T13:00:00+05:30"},
                 {n:"Sprint", t:"2026-03-14T08:30:00+05:30"}, {n:"Qualifying", t:"2026-03-14T12:30:00+05:30"}, {n:"Race", t:"2026-03-15T12:30:00+05:30"}]},
-            { r: 3, loc: "Japan", full: "FORMULA 1 ARAMCO JAPANESE GRAND PRIX 2026", date: "27-29 MAR", sessions: [
+            { r: 3, loc: "Japan", full: "FORMULA 1 ARAMCO JAPANESE GRAND PRIX 2026", date: "27-29 MAR", podium: ["Andrea Kimi Antonelli", "Oscar Piastri", "Charles Leclerc"], sessions: [
                 {n:"Practice 1", t:"2026-03-27T08:00:00+05:30"}, {n:"Practice 2", t:"2026-03-27T11:30:00+05:30"},
                 {n:"Practice 3", t:"2026-03-28T08:00:00+05:30"}, {n:"Qualifying", t:"2026-03-28T11:30:00+05:30"}, {n:"Race", t:"2026-03-29T10:30:00+05:30"}]},
-            { r: 4, loc: "Miami", full: "FORMULA 1 CRYPTO.COM MIAMI GRAND PRIX 2026", date: "01-03 MAY", sessions: [
+            { r: 4, loc: "Miami", full: "FORMULA 1 CRYPTO.COM MIAMI GRAND PRIX 2026", date: "01-03 MAY", podium: ["Andrea Kimi Antonelli", "Lando Norris", "Oscar Piastri"], sessions: [
                 {n:"Practice 1", t:"2026-05-01T22:00:00+05:30"}, {n:"Sprint Qualy", t:"2026-05-02T02:00:00+05:30"},
                 {n:"Sprint", t:"2026-05-02T21:30:00+05:30"}, {n:"Qualifying", t:"2026-05-03T01:30:00+05:30"}, {n:"Race", t:"2026-05-03T22:30:00+05:30"}]},
-            { r: 5, loc: "Canada", full: "FORMULA 1 LENOVO GRAND PRIX DU CANADA 2026", date: "22-24 MAY", sessions: [
+            { r: 5, loc: "Canada", full: "FORMULA 1 LENOVO GRAND PRIX DU CANADA 2026", date: "22-24 MAY", podium: ["Andrea Kimi Antonelli", "Lewis Hamilton", "Max Verstappen"], sessions: [
                 {n:"Practice 1", t:"2026-05-22T22:30:00+05:30"}, {n:"Sprint Qualy", t:"2026-05-23T02:30:00+05:30"},
                 {n:"Sprint", t:"2026-05-23T22:00:00+05:30"}, {n:"Qualifying", t:"2026-05-24T02:00:00+05:30"}, {n:"Race", t:"2026-05-25T01:30:00+05:30"}]},
-            { r: 6, loc: "Moaco", full: "FORMULA 1 LOUIS VUITTON GRAND PRIX DE MONACO 2026", date: "05-07 JUN", sessions: [
+            { r: 6, loc: "Monaco", full: "FORMULA 1 LOUIS VUITTON GRAND PRIX DE MONACO 2026", date: "05-07 JUN", podium: ["Andrea Kimi Antonelli", "Lewis Hamilton", "Isack Hadjar"], sessions: [
                 {n:"Practice 1", t:"2026-06-05T17:00:00+05:30"}, {n:"Practice 2", t:"2026-06-05T20:30:00+05:30"},
                 {n:"Practice 3", t:"2026-06-06T16:00:00+05:30"}, {n:"Qualifying", t:"2026-06-06T19:30:00+05:30"}, {n:"Race", t:"2026-06-07T18:30:00+05:30"}]},
-            { r: 7, loc: "Barcelona", full: "FORMULA 1 MSC CRUISES GRAN PREMIO DE BARCELONA-CATALUNYA 2026", date: "12-14 JUN", sessions: [
+            { r: 7, loc: "Barcelona", full: "FORMULA 1 MSC CRUISES GRAN PREMIO DE BARCELONA-CATALUNYA 2026", date: "12-14 JUN", podium: ["Lewis Hamilton", "George Russell", "Lando Norris"], sessions: [
                 {n:"Practice 1", t:"2026-06-12T17:00:00+05:30"}, {n:"Practice 2", t:"2026-06-12T20:30:00+05:30"},
                 {n:"Practice 3", t:"2026-06-13T16:00:00+05:30"}, {n:"Qualifying", t:"2026-06-13T19:30:00+05:30"}, {n:"Race", t:"2026-06-14T18:30:00+05:30"}]},
-            { r: 8, loc: "Austria", full: "FORMULA 1 LENOVO AUSTRIAN GRAND PRIX 2026", date: "26-28 JUN", sessions: [
+            { r: 8, loc: "Austria", full: "FORMULA 1 LENOVO AUSTRIAN GRAND PRIX 2026", date: "26-28 JUN", podium: ["George Russell", "Max Verstappen", "Andrea Kimi Antonelli"], sessions: [
                 {n:"Practice 1", t:"2026-06-26T17:00:00+05:30"}, {n:"Practice 2", t:"2026-06-26T20:30:00+05:30"},
                 {n:"Practice 3", t:"2026-06-27T16:00:00+05:30"}, {n:"Qualifying", t:"2026-06-27T19:30:00+05:30"}, {n:"Race", t:"2026-06-28T18:30:00+05:30"}]},
-            { r: 9, loc: "Great Britain", full: "FORMULA 1 PIRELLI BRITISH GRAND PRIX 2026", date: "03-05 JUL", sessions: [
+            { r: 9, loc: "Great Britain", full: "FORMULA 1 PIRELLI BRITISH GRAND PRIX 2026", date: "03-05 JUL", podium: ["Charles Leclerc", "George Russell", "Lewis Hamilton"], sessions: [
                 {n:"Practice 1", t:"2026-07-03T17:00:00+05:30"}, {n:"Practice 2", t:"2026-07-03T20:30:00+05:30"},
                 {n:"Practice 3", t:"2026-07-04T16:00:00+05:30"}, {n:"Qualifying", t:"2026-07-04T19:30:00+05:30"}, {n:"Race", t:"2026-07-05T19:30:00+05:30"}]},
-            { r: 10, loc: "Belgium", full: "FORMULA 1 MOËT & CHANDON BELGIAN GRAND PRIX 2026", date: "17-19 JUL", sessions: [
+            { r: 10, loc: "Belgium", full: "FORMULA 1 MOËT & CHANDON BELGIAN GRAND PRIX 2026", date: "17-19 JUL", podium: ["Andrea Kimi Antonelli", "Charles Leclerc", "Max Verstappen"], sessions: [
                 {n:"Practice 1", t:"2026-07-17T17:00:00+05:30"}, {n:"Practice 2", t:"2026-07-17T20:30:00+05:30"},
                 {n:"Practice 3", t:"2026-07-18T16:00:00+05:30"}, {n:"Qualifying", t:"2026-07-18T19:30:00+05:30"}, {n:"Race", t:"2026-07-19T18:30:00+05:30"}]},
-            { r: 11, loc: "Hungary", full: "FORMULA 1 AWS HUNGARIAN GRAND PRIX 2026", date: "24-26 JUL", sessions: [
+            { r: 11, loc: "Hungary", full: "FORMULA 1 AWS HUNGARIAN GRAND PRIX 2026", date: "24-26 JUL", podium: ["Lando Norris", "Max Verstappen", "Andrea Kimi Antonelli"], sessions: [
                 {n:"Practice 1", t:"2026-07-24T17:00:00+05:30"}, {n:"Practice 2", t:"2026-07-24T20:30:00+05:30"},
                 {n:"Practice 3", t:"2026-07-25T16:00:00+05:30"}, {n:"Qualifying", t:"2026-07-25T19:30:00+05:30"}, {n:"Race", t:"2026-07-26T18:30:00+05:30"}]},
-            { r: 12, loc: "Netherlands", full: "FORMULA 1 HEINEKEN DUTCH GRAND PRIX 2026", date: "21-23 AUG", sessions: [
+            { r: 12, loc: "Netherlands", full: "FORMULA 1 HEINEKEN DUTCH GRAND PRIX 2026", date: "21-23 AUG", podium: ["Lando Norris", "Andrea Kimi Antonelli", "George Russell"], sessions: [
                 {n:"Practice 1", t:"2026-08-21T16:00:00+05:30"}, {n:"Sprint Qualy", t:"2026-08-21T20:00:00+05:30"},
                 {n:"Sprint", t:"2026-08-22T15:30:00+05:30"}, {n:"Qualifying", t:"2026-08-22T19:30:00+05:30"}, {n:"Race", t:"2026-08-23T18:30:00+05:30"}]},
-            { r: 13, loc: "Italy", full: "FORMULA 1 PIRELLI GRAN PREMIO D’ITALIA 2026", date: "04-06 SEP", sessions: [
+            { r: 13, loc: "Italy", full: "FORMULA 1 PIRELLI GRAN PREMIO D’ITALIA 2026", date: "04-06 SEP", podium: ["Andrea Kimi Antonelli", "George Russell", "Max Verstappen"], sessions: [
                 {n:"Practice 1", t:"2026-09-04T17:00:00+05:30"}, {n:"Practice 2", t:"2026-09-04T20:30:00+05:30"},
                 {n:"Practice 3", t:"2026-09-05T16:00:00+05:30"}, {n:"Qualifying", t:"2026-09-05T19:30:00+05:30"}, {n:"Race", t:"2026-09-06T18:30:00+05:30"}]},
-            { r: 14, loc: "Spain (Madrid)", full: "FORMULA 1 TAG HEUER GRAN PREMIO DE ESPAÑA 2026", date: "11-13 SEP", sessions: [
+            { r: 14, loc: "Spain (Madrid)", full: "FORMULA 1 TAG HEUER GRAN PREMIO DE ESPAÑA 2026", date: "11-13 SEP", podium: ["Andrea Kimi Antonelli", "Max Verstappen", "Lando Norris"], sessions: [
                 {n:"Practice 1", t:"2026-09-11T17:00:00+05:30"}, {n:"Practice 2", t:"2026-09-11T20:30:00+05:30"},
                 {n:"Practice 3", t:"2026-09-12T16:00:00+05:30"}, {n:"Qualifying", t:"2026-09-12T19:30:00+05:30"}, {n:"Race", t:"2026-09-13T18:30:00+05:30"}]},
-            { r: 15, loc: "Azerbaijan", full: "FORMULA 1 QATAR AIRWAYS AZERBAIJAN GRAND PRIX 2026", date: "24-26 SEP", sessions: [
+            { r: 15, loc: "Azerbaijan", full: "FORMULA 1 QATAR AIRWAYS AZERBAIJAN GRAND PRIX 2026", date: "24-26 SEP", podium: ["George Russell", "Max Verstappen", "Isack Hadjar"], sessions: [
                 {n:"Practice 1", t:"2026-09-24T14:00:00+05:30"}, {n:"Practice 2", t:"2026-09-24T17:30:00+05:30"},
                 {n:"Practice 3", t:"2026-09-25T14:00:00+05:30"}, {n:"Qualifying", t:"2026-09-25T17:30:00+05:30"}, {n:"Race", t:"2026-09-26T16:30:00+05:30"}]},
             { r: 16, loc: "Bahrain (Sepang)", full: "FORMULA 1 GULF AIR BAHRAIN GRAND PRIX IN MALAYSIA 2026", date: "02-04 OCT", sessions: [
@@ -116,43 +186,102 @@
                 {n:"Practice 3", t:"2026-12-05T16:00:00+05:30"}, {n:"Qualifying", t:"2026-12-05T19:30:00+05:30"}, {n:"Race", t:"2026-12-06T18:30:00+05:30"}]}
         ];
 
+        const standings = [
+            { pos: 1, driver: "Andrea Kimi Antonelli", team: "Mercedes", pts: 302 },
+            { pos: 2, driver: "George Russell", team: "Mercedes", pts: 236 },
+            { pos: 3, driver: "Lewis Hamilton", team: "Ferrari", pts: 199 },
+            { pos: 4, driver: "Lando Norris", team: "McLaren", pts: 186 },
+            { pos: 5, driver: "Charles Leclerc", team: "Ferrari", pts: 179 },
+            { pos: 6, driver: "Max Verstappen", team: "Red Bull", pts: 163 },
+            { pos: 7, driver: "Oscar Piastri", team: "McLaren", pts: 120 },
+            { pos: 8, driver: "Isack Hadjar", team: "Red Bull", pts: 86 }
+        ];
+
+        let selectedRound = cal.find(r => new Date(r.sessions[r.sessions.length - 1].t) > new Date())?.r || 16;
+
+        function renderSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.innerHTML = cal.map(r => `
+                <div class="sidebar-item ${r.r === selectedRound ? 'active' : ''}" onclick="selectRound(${r.r})">
+                    <div class="round-num">Round ${r.r} • ${r.date}</div>
+                    <div class="loc-name">${r.loc}</div>
+                </div>
+            `).join('');
+        }
+
+        function selectRound(rNum) {
+            selectedRound = rNum;
+            renderSidebar();
+            up();
+        }
+
         function up() {
             const now = new Date();
-            const race = cal.find(r => new Date(r.sessions[r.sessions.length - 1].t) > now) || cal[cal.length - 1];
+            const race = cal.find(r => r.r === selectedRound);
+            const isUpcoming = new Date(race.sessions[race.sessions.length - 1].t) > now;
             
             let html = `<div class="header"><p>ROUND ${race.r} | ${race.date}</p><h1>${race.loc}</h1><p class="full-name">${race.full}</p></div>`;
-            race.sessions.forEach(s => {
-                const target = new Date(s.t);
-                const diff = target - now;
-                let txt = "LIVE";
-                if (diff > 0) {
-                    const d = Math.floor(diff / 86400000);
-                    const h = Math.floor((diff % 86400000) / 3600000);
-                    const m = Math.floor((diff % 3600000) / 60000);
-                    const sec = Math.floor((diff % 60000) / 1000);
-                    txt = `${d > 0 ? d + 'd ' : ''}${h}h ${m}m ${sec}s`;
-                } else if (diff < -7200000) { 
-                    txt = "FINISHED"; 
-                }
+            
+            if (isUpcoming) {
+                // Show countdown sessions for upcoming/current weekend
+                race.sessions.forEach(s => {
+                    const target = new Date(s.t);
+                    const diff = target - now;
+                    let txt = "LIVE";
+                    if (diff > 0) {
+                        const d = Math.floor(diff / 86400000);
+                        const h = Math.floor((diff % 86400000) / 3600000);
+                        const m = Math.floor((diff % 3600000) / 60000);
+                        const sec = Math.floor((diff % 60000) / 1000);
+                        txt = `${d > 0 ? d + 'd ' : ''}${h}h ${m}m ${sec}s`;
+                    } else if (diff < -7200000) { 
+                        txt = "FINISHED"; 
+                    }
 
-                html += `<div class="session-row">
-                            <div>
-                                <div class="name">${s.n}</div>
-                                <div class="ist">${target.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} IST</div>
+                    html += `<div class="session-row">
+                                <div>
+                                    <div class="name">${s.n}</div>
+                                    <div class="ist">${target.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} IST</div>
+                                </div>
+                                <div class="timer">${txt}</div>
+                             </div>`;
+                });
+
+                // Append Standings Table below
+                html += `<div class="info-card" style="margin-top: 15px;">
+                            <h3>Current Drivers' Standings</h3>
+                            <div class="standings-list">
+                                ${standings.map(st => `
+                                    <div class="standing-item">
+                                        <div><span class="pos-badge">${st.pos}.</span> <strong>${st.driver}</strong> <span style="color:#888; font-size:0.8rem;">(${st.team})</span></div>
+                                        <div style="font-family: monospace; color: var(--f1-red); font-weight: bold;">${st.pts} PTS</div>
+                                    </div>
+                                `).join('')}
                             </div>
-                            <div class="timer">${txt}</div>
                          </div>`;
-            });
+            } else {
+                // Show Podiums for past races
+                html += `<div class="info-card">
+                            <h3>Race Podium Results</h3>
+                            <div class="podium-list">
+                                <div class="podium-item"><span class="pos-badge">1st</span> <strong>🏆 ${race.podium[0]}</strong></div>
+                                <div class="podium-item"><span class="pos-badge">2nd</span> <strong>🥈 ${race.podium[1]}</strong></div>
+                                <div class="podium-item"><span class="pos-badge">3rd</span> <strong>🥉 ${race.podium[2]}</strong></div>
+                            </div>
+                         </div>`;
+            }
+
             document.getElementById('ui').innerHTML = html;
         }
 
         window.addEventListener('load', () => { 
             const v = document.getElementById('video-bg');
-            v.play().catch(() => { console.log("Autoplay blocked, waiting for interaction"); });
+            v.play().catch(() => { console.log("Autoplay blocked"); });
+            renderSidebar();
+            up();
         });
 
-        setInterval(up, 1000); 
-        up();
+        setInterval(up, 1000);
     </script>
 </body>
 </html>
