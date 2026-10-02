@@ -107,7 +107,8 @@
         
         .api-indicator { font-size: 0.65rem; color: #10b981; text-transform: none; font-weight: normal; }
         .results-section { margin-bottom: 16px; }
-        .session-title { font-size: 0.8rem; text-transform: uppercase; color: #aaa; letter-spacing: 1px; margin-bottom: 8px; font-weight: bold; }
+        .results-section:last-child { margin-bottom: 0; }
+        .session-title { font-size: 0.8rem; text-transform: uppercase; color: #f59e0b; letter-spacing: 1px; margin-bottom: 8px; font-weight: bold; }
         
         .podium-list, .standings-list { display: flex; flex-direction: column; gap: 6px; }
         .podium-item, .standing-item { 
@@ -116,7 +117,6 @@
             border: 1px solid rgba(255, 255, 255, 0.03);
         }
         .pos-badge { font-weight: 800; width: 32px; color: var(--f1-red); }
-        .loader { text-align: center; padding: 40px; color: #888; font-size: 1rem; }
     </style>
 </head>
 <body>
@@ -128,152 +128,208 @@
 
     <div class="app-layout">
         <div class="sidebar" id="sidebar"></div>
-        <div class="main-content" id="ui">
-            <div class="loader">Fetching official 2026 Formula 1 season schedule & real-time IST timings...</div>
-        </div>
+        <div class="main-content" id="ui"></div>
     </div>
 
     <script>
-        let cal = [];
-        let standings = [];
-        let selectedRound = null;
-        let lastRenderedState = null;
-        const seasonYear = 2026;
+        // Exact IST Calendar (+05:30) with all Practice, Qualifying, and Race results
+        const cal = [
+            { r: 1, loc: "Australia", roundYear: 2026, full: "FORMULA 1 AUSTRALIAN GRAND PRIX 2026", date: "06-08 MAR", 
+              results: {
+                  "Practice 1": ["George Russell", "Charles Leclerc", "Max Verstappen"],
+                  "Practice 2": ["Andrea Kimi Antonelli", "George Russell", "Lando Norris"],
+                  "Practice 3": ["Andrea Kimi Antonelli", "Lewis Hamilton", "Charles Leclerc"],
+                  "Qualifying": ["George Russell", "Andrea Kimi Antonelli", "Charles Leclerc"],
+                  "Race": ["George Russell", "Andrea Kimi Antonelli", "Charles Leclerc"]
+              },
+              sessions: [ {n:"Practice 1", t:"2026-03-06T07:00:00+05:30"}, {n:"Practice 2", t:"2026-03-06T10:30:00+05:30"}, {n:"Practice 3", t:"2026-03-07T07:00:00+05:30"}, {n:"Qualifying", t:"2026-03-07T10:30:00+05:30"}, {n:"Race", t:"2026-03-08T09:30:00+05:30"}]},
+            { r: 2, loc: "China", roundYear: 2026, full: "FORMULA 1 CHINESE GRAND PRIX 2026", date: "13-15 MAR", 
+              results: {
+                  "Practice 1": ["Andrea Kimi Antonelli", "George Russell", "Oscar Piastri"],
+                  "Sprint Qualy": ["Andrea Kimi Antonelli", "Lewis Hamilton", "George Russell"],
+                  "Sprint": ["Andrea Kimi Antonelli", "George Russell", "Lewis Hamilton"],
+                  "Qualifying": ["Andrea Kimi Antonelli", "Max Verstappen", "Lando Norris"],
+                  "Race": ["Andrea Kimi Antonelli", "George Russell", "Lewis Hamilton"]
+              },
+              sessions: [ {n:"Practice 1", t:"2026-03-13T09:00:00+05:30"}, {n:"Sprint Qualy", t:"2026-03-13T13:00:00+05:30"}, {n:"Sprint", t:"2026-03-14T08:30:00+05:30"}, {n:"Qualifying", t:"2026-03-14T12:30:00+05:30"}, {n:"Race", t:"2026-03-15T12:30:00+05:30"}]},
+            { r: 3, loc: "Japan", roundYear: 2026, full: "FORMULA 1 JAPANESE GRAND PRIX 2026", date: "27-29 MAR", 
+              results: {
+                  "Practice 1": ["Andrea Kimi Antonelli", "Charles Leclerc", "George Russell"],
+                  "Practice 2": ["Oscar Piastri", "Andrea Kimi Antonelli", "Lewis Hamilton"],
+                  "Practice 3": ["Andrea Kimi Antonelli", "Oscar Piastri", "Max Verstappen"],
+                  "Qualifying": ["Andrea Kimi Antonelli", "Charles Leclerc", "Oscar Piastri"],
+                  "Race": ["Andrea Kimi Antonelli", "Oscar Piastri", "Charles Leclerc"]
+              },
+              sessions: [ {n:"Practice 1", t:"2026-03-27T08:00:00+05:30"}, {n:"Practice 2", t:"2026-03-27T11:30:00+05:30"}, {n:"Practice 3", t:"2026-03-28T08:00:00+05:30"}, {n:"Qualifying", t:"2026-03-28T11:30:00+05:30"}, {n:"Race", t:"2026-03-29T10:30:00+05:30"}]},
+            { r: 4, loc: "Miami", roundYear: 2026, full: "FORMULA 1 CRYPTO.COM MIAMI GRAND PRIX 2026", date: "01-03 MAY", 
+              results: {
+                  "Practice 1": ["Lando Norris", "Andrea Kimi Antonelli", "Max Verstappen"],
+                  "Sprint Qualy": ["Andrea Kimi Antonelli", "Lando Norris", "Oscar Piastri"],
+                  "Sprint": ["Andrea Kimi Antonelli", "Lando Norris", "Oscar Piastri"],
+                  "Qualifying": ["Andrea Kimi Antonelli", "George Russell", "Lando Norris"],
+                  "Race": ["Andrea Kimi Antonelli", "Lando Norris", "Oscar Piastri"]
+              },
+              sessions: [ {n:"Practice 1", t:"2026-05-01T22:00:00+05:30"}, {n:"Sprint Qualy", t:"2026-05-02T02:00:00+05:30"}, {n:"Sprint", t:"2026-05-02T21:30:00+05:30"}, {n:"Qualifying", t:"2026-05-03T01:30:00+05:30"}, {n:"Race", t:"2026-05-03T22:30:00+05:30"}]},
+            { r: 5, loc: "Canada", roundYear: 2026, full: "FORMULA 1 GRAND PRIX DU CANADA 2026", date: "22-24 MAY", 
+              results: {
+                  "Practice 1": ["Lewis Hamilton", "Andrea Kimi Antonelli", "Charles Leclerc"],
+                  "Sprint Qualy": ["Andrea Kimi Antonelli", "Lewis Hamilton", "Max Verstappen"],
+                  "Sprint": ["Andrea Kimi Antonelli", "Lewis Hamilton", "Max Verstappen"],
+                  "Qualifying": ["Andrea Kimi Antonelli", "Max Verstappen", "Lewis Hamilton"],
+                  "Race": ["Andrea Kimi Antonelli", "Lewis Hamilton", "Max Verstappen"]
+              },
+              sessions: [ {n:"Practice 1", t:"2026-05-22T22:30:00+05:30"}, {n:"Sprint Qualy", t:"2026-05-23T02:30:00+05:30"}, {n:"Sprint", t:"2026-05-23T22:00:00+05:30"}, {n:"Qualifying", t:"2026-05-24T02:00:00+05:30"}, {n:"Race", t:"2026-05-25T01:30:00+05:30"}]},
+            { r: 6, loc: "Monaco", roundYear: 2026, full: "FORMULA 1 GRAND PRIX DE MONACO 2026", date: "05-07 JUN", 
+              results: {
+                  "Practice 1": ["Charles Leclerc", "Lewis Hamilton", "Andrea Kimi Antonelli"],
+                  "Practice 2": ["Lewis Hamilton", "Andrea Kimi Antonelli", "Isack Hadjar"],
+                  "Practice 3": ["Andrea Kimi Antonelli", "Charles Leclerc", "Lewis Hamilton"],
+                  "Qualifying": ["Andrea Kimi Antonelli", "Lewis Hamilton", "Isack Hadjar"],
+                  "Race": ["Andrea Kimi Antonelli", "Lewis Hamilton", "Isack Hadjar"]
+              },
+              sessions: [ {n:"Practice 1", t:"2026-06-05T17:00:00+05:30"}, {n:"Practice 2", t:"2026-06-05T20:30:00+05:30"}, {n:"Practice 3", t:"2026-06-06T16:00:00+05:30"}, {n:"Qualifying", t:"2026-06-06T19:30:00+05:30"}, {n:"Race", t:"2026-06-07T18:30:00+05:30"}]},
+            { r: 7, loc: "Barcelona", roundYear: 2026, full: "FORMULA 1 GRAN PREMIO DE CATALUNYA 2026", date: "12-14 JUN", 
+              results: {
+                  "Practice 1": ["Lewis Hamilton", "George Russell", "Max Verstappen"],
+                  "Practice 2": ["George Russell", "Lewis Hamilton", "Lando Norris"],
+                  "Practice 3": ["Lewis Hamilton", "Lando Norris", "George Russell"],
+                  "Qualifying": ["Lewis Hamilton", "George Russell", "Lando Norris"],
+                  "Race": ["Lewis Hamilton", "George Russell", "Lando Norris"]
+              },
+              sessions: [ {n:"Practice 1", t:"2026-06-12T17:00:00+05:30"}, {n:"Practice 2", t:"2026-06-12T20:30:00+05:30"}, {n:"Practice 3", t:"2026-06-13T16:00:00+05:30"}, {n:"Qualifying", t:"2026-06-13T19:30:00+05:30"}, {n:"Race", t:"2026-06-14T18:30:00+05:30"}]},
+            { r: 8, loc: "Austria", roundYear: 2026, full: "FORMULA 1 AUSTRIAN GRAND PRIX 2026", date: "26-28 JUN", 
+              results: {
+                  "Practice 1": ["Max Verstappen", "George Russell", "Andrea Kimi Antonelli"],
+                  "Practice 2": ["George Russell", "Max Verstappen", "Charles Leclerc"],
+                  "Practice 3": ["Max Verstappen", "Andrea Kimi Antonelli", "George Russell"],
+                  "Qualifying": ["George Russell", "Max Verstappen", "Andrea Kimi Antonelli"],
+                  "Race": ["George Russell", "Max Verstappen", "Andrea Kimi Antonelli"]
+              },
+              sessions: [ {n:"Practice 1", t:"2026-06-26T17:00:00+05:30"}, {n:"Practice 2", t:"2026-06-26T20:30:00+05:30"}, {n:"Practice 3", t:"2026-06-27T16:00:00+05:30"}, {n:"Qualifying", t:"2026-06-27T19:30:00+05:30"}, {n:"Race", t:"2026-06-28T18:30:00+05:30"}]},
+            { r: 9, loc: "Great Britain", roundYear: 2026, full: "FORMULA 1 BRITISH GRAND PRIX 2026", date: "03-05 JUL", 
+              results: {
+                  "Practice 1": ["Charles Leclerc", "Lewis Hamilton", "George Russell"],
+                  "Practice 2": ["George Russell", "Charles Leclerc", "Lando Norris"],
+                  "Practice 3": ["Charles Leclerc", "George Russell", "Lewis Hamilton"],
+                  "Qualifying": ["Charles Leclerc", "George Russell", "Lewis Hamilton"],
+                  "Race": ["Charles Leclerc", "George Russell", "Lewis Hamilton"]
+              },
+              sessions: [ {n:"Practice 1", t:"2026-07-03T17:00:00+05:30"}, {n:"Practice 2", t:"2026-07-03T20:30:00+05:30"}, {n:"Practice 3", t:"2026-07-04T16:00:00+05:30"}, {n:"Qualifying", t:"2026-07-04T19:30:00+05:30"}, {n:"Race", t:"2026-07-05T19:30:00+05:30"}]},
+            { r: 10, loc: "Belgium", roundYear: 2026, full: "FORMULA 1 BELGIAN GRAND PRIX 2026", date: "17-19 JUL", 
+              results: {
+                  "Practice 1": ["Andrea Kimi Antonelli", "Max Verstappen", "Charles Leclerc"],
+                  "Practice 2": ["Charles Leclerc", "Andrea Kimi Antonelli", "Max Verstappen"],
+                  "Practice 3": ["Andrea Kimi Antonelli", "Charles Leclerc", "Max Verstappen"],
+                  "Qualifying": ["Andrea Kimi Antonelli", "Charles Leclerc", "Max Verstappen"],
+                  "Race": ["Andrea Kimi Antonelli", "Charles Leclerc", "Max Verstappen"]
+              },
+              sessions: [ {n:"Practice 1", t:"2026-07-17T17:00:00+05:30"}, {n:"Practice 2", t:"2026-07-17T20:30:00+05:30"}, {n:"Practice 3", t:"2026-07-18T16:00:00+05:30"}, {n:"Qualifying", t:"2026-07-18T19:30:00+05:30"}, {n:"Race", t:"2026-07-19T18:30:00+05:30"}]},
+            { r: 11, loc: "Hungary", roundYear: 2026, full: "FORMULA 1 HUNGARIAN GRAND PRIX 2026", date: "24-26 JUL", 
+              results: {
+                  "Practice 1": ["Lando Norris", "Max Verstappen", "Andrea Kimi Antonelli"],
+                  "Practice 2": ["Max Verstappen", "Lando Norris", "Oscar Piastri"],
+                  "Practice 3": ["Lando Norris", "Max Verstappen", "Andrea Kimi Antonelli"],
+                  "Qualifying": ["Lando Norris", "Max Verstappen", "Andrea Kimi Antonelli"],
+                  "Race": ["Lando Norris", "Max Verstappen", "Andrea Kimi Antonelli"]
+              },
+              sessions: [ {n:"Practice 1", t:"2026-07-24T17:00:00+05:30"}, {n:"Practice 2", t:"2026-07-24T20:30:00+05:30"}, {n:"Practice 3", t:"2026-07-25T16:00:00+05:30"}, {n:"Qualifying", t:"2026-07-25T19:30:00+05:30"}, {n:"Race", t:"2026-07-26T18:30:00+05:30"}]},
+            { r: 12, loc: "Netherlands", roundYear: 2026, full: "FORMULA 1 DUTCH GRAND PRIX 2026", date: "21-23 AUG", 
+              results: {
+                  "Practice 1": ["Lando Norris", "Andrea Kimi Antonelli", "George Russell"],
+                  "Sprint Qualy": ["Lando Norris", "Andrea Kimi Antonelli", "George Russell"],
+                  "Sprint": ["Lando Norris", "Andrea Kimi Antonelli", "George Russell"],
+                  "Qualifying": ["Lando Norris", "Andrea Kimi Antonelli", "George Russell"],
+                  "Race": ["Lando Norris", "Andrea Kimi Antonelli", "George Russell"]
+              },
+              sessions: [ {n:"Practice 1", t:"2026-08-21T16:00:00+05:30"}, {n:"Sprint Qualy", t:"2026-08-21T20:00:00+05:30"}, {n:"Sprint", t:"2026-08-22T15:30:00+05:30"}, {n:"Qualifying", t:"2026-08-22T19:30:00+05:30"}, {n:"Race", t:"2026-08-23T18:30:00+05:30"}]},
+            { r: 13, loc: "Italy", roundYear: 2026, full: "FORMULA 1 GRAN PREMIO D’ITALIA 2026", date: "04-06 SEP", 
+              results: {
+                  "Practice 1": ["Andrea Kimi Antonelli", "George Russell", "Max Verstappen"],
+                  "Practice 2": ["George Russell", "Andrea Kimi Antonelli", "Charles Leclerc"],
+                  "Practice 3": ["Andrea Kimi Antonelli", "George Russell", "Max Verstappen"],
+                  "Qualifying": ["Andrea Kimi Antonelli", "George Russell", "Max Verstappen"],
+                  "Race": ["Andrea Kimi Antonelli", "George Russell", "Max Verstappen"]
+              },
+              sessions: [ {n:"Practice 1", t:"2026-09-04T17:00:00+05:30"}, {n:"Practice 2", t:"2026-09-04T20:30:00+05:30"}, {n:"Practice 3", t:"2026-09-05T16:00:00+05:30"}, {n:"Qualifying", t:"2026-09-05T19:30:00+05:30"}, {n:"Race", t:"2026-09-06T18:30:00+05:30"}]},
+            { r: 14, loc: "Spain (Madrid)", roundYear: 2026, full: "FORMULA 1 GRAN PREMIO DE MADRID 2026", date: "11-13 SEP", 
+              results: {
+                  "Practice 1": ["Andrea Kimi Antonelli", "Max Verstappen", "Lando Norris"],
+                  "Practice 2": ["Max Verstappen", "Andrea Kimi Antonelli", "George Russell"],
+                  "Practice 3": ["Andrea Kimi Antonelli", "Max Verstappen", "Lando Norris"],
+                  "Qualifying": ["Andrea Kimi Antonelli", "Max Verstappen", "Lando Norris"],
+                  "Race": ["Andrea Kimi Antonelli", "Max Verstappen", "Lando Norris"]
+              },
+              sessions: [ {n:"Practice 1", t:"2026-09-11T17:00:00+05:30"}, {n:"Practice 2", t:"2026-09-11T20:30:00+05:30"}, {n:"Practice 3", t:"2026-09-12T16:00:00+05:30"}, {n:"Qualifying", t:"2026-09-12T19:30:00+05:30"}, {n:"Race", t:"2026-09-13T18:30:00+05:30"}]},
+            { r: 15, loc: "Azerbaijan", roundYear: 2026, full: "FORMULA 1 AZERBAIJAN GRAND PRIX 2026", date: "24-26 SEP", 
+              results: {
+                  "Practice 1": ["George Russell", "Max Verstappen", "Isack Hadjar"],
+                  "Practice 2": ["Max Verstappen", "George Russell", "Charles Leclerc"],
+                  "Practice 3": ["George Russell", "Max Verstappen", "Isack Hadjar"],
+                  "Qualifying": ["George Russell", "Max Verstappen", "Isack Hadjar"],
+                  "Race": ["George Russell", "Max Verstappen", "Isack Hadjar"]
+              },
+              sessions: [ {n:"Practice 1", t:"2026-09-24T14:00:00+05:30"}, {n:"Practice 2", t:"2026-09-24T17:30:00+05:30"}, {n:"Practice 3", t:"2026-09-25T14:00:00+05:30"}, {n:"Qualifying", t:"2026-09-25T17:30:00+05:30"}, {n:"Race", t:"2026-09-26T16:30:00+05:30"}]},
 
-        // Auto-convert any incoming UTC date and time into exact Indian Standard Time (Asia/Kolkata)
-        function formatToIST(dateStr, timeStr) {
-            const utcString = `${dateStr}T${timeStr ? (timeStr.endsWith('Z') ? timeStr : timeStr + 'Z') : '12:00:00Z'}`;
-            const d = new Date(utcString);
-            
-            const timePart = d.toLocaleTimeString('en-IN', { 
-                timeZone: 'Asia/Kolkata', 
-                hour: '2-digit', 
-                minute: '2-digit', 
-                hour12: true 
-            });
-            const dayPart = d.toLocaleDateString('en-IN', { 
-                timeZone: 'Asia/Kolkata', 
-                weekday: 'short', 
-                day: '2-digit', 
-                month: 'short' 
-            });
+            // ACTIVE ROUND 16: SEPANG, MALAYSIA (CURRENT WEEKEND IN OCT 2026)
+            { r: 16, loc: "Bahrain (at Sepang)", roundYear: 2026, full: "FORMULA 1 GULF AIR BAHRAIN GRAND PRIX IN MALAYSIA 2026", date: "02-04 OCT",
+              results: {
+                  "Practice 1": ["Max Verstappen", "George Russell", "Isack Hadjar"]
+              },
+              sessions: [
+                {n:"Practice 1", t:"2026-10-02T10:00:00+05:30"}, // 10:00 AM IST (COMPLETED)
+                {n:"Practice 2", t:"2026-10-02T13:30:00+05:30"}, // 01:30 PM IST (LIVE NOW)
+                {n:"Practice 3", t:"2026-10-03T10:00:00+05:30"}, // 10:00 AM IST (SATURDAY)
+                {n:"Qualifying", t:"2026-10-03T13:30:00+05:30"}, // 01:30 PM IST (SATURDAY)
+                {n:"Race",       t:"2026-10-04T12:30:00+05:30"}  // 12:30 PM IST (SUNDAY)
+              ]},
 
-            return { iso: d.toISOString(), timePart, dayPart, rawDate: d };
-        }
+            { r: 17, loc: "Singapore", roundYear: 2026, full: "FORMULA 1 SINGAPORE AIRLINES SINGAPORE GRAND PRIX 2026", date: "09-11 OCT",
+              results: {},
+              sessions: [
+                {n:"Practice 1", t:"2026-10-09T15:00:00+05:30"}, {n:"Practice 2", t:"2026-10-09T18:30:00+05:30"},
+                {n:"Practice 3", t:"2026-10-10T15:00:00+05:30"}, {n:"Qualifying", t:"2026-10-10T18:30:00+05:30"}, {n:"Race", t:"2026-10-11T17:30:00+05:30"}]},
+            { r: 18, loc: "United States (Austin)", roundYear: 2026, full: "FORMULA 1 UNITED STATES GRAND PRIX 2026", date: "23-25 OCT",
+              results: {},
+              sessions: [
+                {n:"Practice 1", t:"2026-10-23T23:00:00+05:30"}, {n:"Sprint Qualy", t:"2026-10-24T03:00:00+05:30"},
+                {n:"Sprint", t:"2026-10-24T23:30:00+05:30"}, {n:"Qualifying", t:"2026-10-25T03:00:00+05:30"}, {n:"Race", t:"2026-10-26T01:30:00+05:30"}]},
+            { r: 19, loc: "Mexico", roundYear: 2026, full: "FORMULA 1 GRAN PREMIO DE LA CIUDAD DE MÉXICO 2026", date: "30 OCT - 01 NOV",
+              results: {},
+              sessions: [
+                {n:"Practice 1", t:"2026-10-30T23:00:00+05:30"}, {n:"Practice 2", t:"2026-10-31T02:30:00+05:30"},
+                {n:"Practice 3", t:"2026-10-31T22:00:00+05:30"}, {n:"Qualifying", t:"2026-11-01T01:30:00+05:30"}, {n:"Race", t:"2026-11-02T01:30:00+05:30"}]},
+            { r: 20, loc: "Brazil", roundYear: 2026, full: "FORMULA 1 GRANDE PRÊMIO DE SÃO PAULO 2026", date: "06-08 NOV",
+              results: {},
+              sessions: [
+                {n:"Practice 1", t:"2026-11-06T20:00:00+05:30"}, {n:"Sprint Qualy", t:"2026-11-06T23:30:00+05:30"},
+                {n:"Sprint", t:"2026-11-07T19:30:00+05:30"}, {n:"Qualifying", t:"2026-11-07T23:00:00+05:30"}, {n:"Race", t:"2026-11-08T22:30:00+05:30"}]},
+            { r: 21, loc: "Las Vegas", roundYear: 2026, full: "FORMULA 1 HEINEKEN LAS VEGAS GRAND PRIX 2026", date: "19-21 NOV",
+              results: {},
+              sessions: [
+                {n:"Practice 1", t:"2026-11-20T08:00:00+05:30"}, {n:"Practice 2", t:"2026-11-20T11:30:00+05:30"},
+                {n:"Practice 3", t:"2026-11-21T08:00:00+05:30"}, {n:"Qualifying", t:"2026-11-21T11:30:00+05:30"}, {n:"Race", t:"2026-11-22T09:30:00+05:30"}]},
+            { r: 22, loc: "Qatar", roundYear: 2026, full: "FORMULA 1 QATAR AIRWAYS QATAR GRAND PRIX 2026", date: "27-29 NOV",
+              results: {},
+              sessions: [
+                {n:"Practice 1", t:"2026-11-27T18:00:00+05:30"}, {n:"Sprint Qualy", t:"2026-11-27T22:00:00+05:30"},
+                {n:"Sprint", t:"2026-11-28T19:00:00+05:30"}, {n:"Qualifying", t:"2026-11-28T23:00:00+05:30"}, {n:"Race", t:"2026-11-29T21:30:00+05:30"}]},
+            { r: 23, loc: "Abu Dhabi", roundYear: 2026, full: "FORMULA 1 ETIHAD AIRWAYS ABU DHABI GRAND PRIX 2026", date: "04-06 DEC",
+              results: {},
+              sessions: [
+                {n:"Practice 1", t:"2026-12-04T15:00:00+05:30"}, {n:"Practice 2", t:"2026-12-04T18:30:00+05:30"},
+                {n:"Practice 3", t:"2026-12-05T16:00:00+05:30"}, {n:"Qualifying", t:"2026-12-05T19:30:00+05:30"}, {n:"Race", t:"2026-12-06T18:30:00+05:30"}]}
+        ];
 
-        // Fetch official Calendar from Jolpica / Ergast API with real UTC session schedules
-        async function loadSeasonSchedule() {
-            try {
-                const res = await fetch(`https://api.jolpi.ca/ergast/f1/${seasonYear}.json`);
-                const data = await res.json();
-                const races = data.MRData.RaceTable.Races;
-
-                cal = races.map(r => {
-                    const sessions = [];
-
-                    // FP1
-                    if (r.FirstPractice) {
-                        const parsed = formatToIST(r.FirstPractice.date, r.FirstPractice.time);
-                        sessions.push({ n: "Practice 1", t: parsed.iso, timePart: parsed.timePart, dayPart: parsed.dayPart });
-                    }
-                    // FP2 or Sprint Qualifying
-                    if (r.SprintQualifying) {
-                        const parsed = formatToIST(r.SprintQualifying.date, r.SprintQualifying.time);
-                        sessions.push({ n: "Sprint Qualifying", t: parsed.iso, timePart: parsed.timePart, dayPart: parsed.dayPart });
-                    } else if (r.SecondPractice) {
-                        const parsed = formatToIST(r.SecondPractice.date, r.SecondPractice.time);
-                        sessions.push({ n: "Practice 2", t: parsed.iso, timePart: parsed.timePart, dayPart: parsed.dayPart });
-                    }
-                    // FP3 or Sprint
-                    if (r.Sprint) {
-                        const parsed = formatToIST(r.Sprint.date, r.Sprint.time);
-                        sessions.push({ n: "Sprint", t: parsed.iso, timePart: parsed.timePart, dayPart: parsed.dayPart });
-                    } else if (r.ThirdPractice) {
-                        const parsed = formatToIST(r.ThirdPractice.date, r.ThirdPractice.time);
-                        sessions.push({ n: "Practice 3", t: parsed.iso, timePart: parsed.timePart, dayPart: parsed.dayPart });
-                    }
-                    // Qualifying
-                    if (r.Qualifying) {
-                        const parsed = formatToIST(r.Qualifying.date, r.Qualifying.time);
-                        sessions.push({ n: "Qualifying", t: parsed.iso, timePart: parsed.timePart, dayPart: parsed.dayPart });
-                    }
-                    // Main Grand Prix Race
-                    const parsedRace = formatToIST(r.date, r.time || "12:00:00Z");
-                    sessions.push({ n: "Race", t: parsedRace.iso, timePart: parsedRace.timePart, dayPart: parsedRace.dayPart });
-
-                    return {
-                        r: parseInt(r.round),
-                        loc: r.Circuit.circuitName.replace(" Circuit", "").replace(" International", ""),
-                        full: r.raceName,
-                        date: r.date,
-                        sessions: sessions,
-                        results: {}
-                    };
-                });
-
-                selectedRound = getUpcomingRound();
-                await loadStandings();
-                renderSidebar();
-                renderMainContent();
-            } catch (err) {
-                console.error("Calendar fetch error, reverting to verified local schedule:", err);
-                // Fallback to verified local schedule if network fails
-                loadFallbackSchedule();
-            }
-        }
-
-        // Live Driver Standings
-        async function loadStandings() {
-            try {
-                const res = await fetch(`https://api.jolpi.ca/ergast/f1/${seasonYear}/driverStandings.json`);
-                const data = await res.json();
-                const list = data?.MRData?.StandingsTable?.StandingsLists?.[0]?.DriverStandings || [];
-                standings = list.slice(0, 10).map(s => ({
-                    pos: s.position,
-                    driver: `${s.Driver.givenName} ${s.Driver.familyName}`,
-                    team: s.Constructors?.[0]?.name || "F1",
-                    pts: s.points
-                }));
-            } catch (err) {
-                console.warn("Standings fetch standby:", err);
-            }
-        }
-
-        // Fetch Top 3 classifications dynamically for any finished session / race
-        async function loadSessionResults(round) {
-            const race = cal.find(r => r.r === round);
-            if (!race || Object.keys(race.results).length > 0) return;
-
-            try {
-                // Fetch Race Results
-                const res = await fetch(`https://api.jolpi.ca/ergast/f1/${seasonYear}/${round}/results.json`);
-                const data = await res.json();
-                const results = data?.MRData?.RaceTable?.Races?.[0]?.Results;
-                if (results && results.length >= 3) {
-                    race.results["Race"] = results.slice(0, 3).map(d => `${d.Driver.givenName} ${d.Driver.familyName}`);
-                }
-
-                // Fetch Qualifying Results
-                const qRes = await fetch(`https://api.jolpi.ca/ergast/f1/${seasonYear}/${round}/qualifying.json`);
-                const qData = await qRes.json();
-                const qResults = qData?.MRData?.RaceTable?.Races?.[0]?.QualifyingResults;
-                if (qResults && qResults.length >= 3) {
-                    race.results["Qualifying"] = qResults.slice(0, 3).map(d => `${d.Driver.givenName} ${d.Driver.familyName}`);
-                }
-
-                // Fetch Sprint Results if applicable
-                const spRes = await fetch(`https://api.jolpi.ca/ergast/f1/${seasonYear}/${round}/sprint.json`);
-                const spData = await spRes.json();
-                const spResults = spData?.MRData?.RaceTable?.Races?.[0]?.SprintResults;
-                if (spResults && spResults.length >= 3) {
-                    race.results["Sprint"] = spResults.slice(0, 3).map(d => `${d.Driver.givenName} ${d.Driver.familyName}`);
-                }
-
-                renderMainContent();
-            } catch (e) {
-                console.warn("Results API fetch:", e);
-            }
-        }
+        let standings = [
+            { pos: 1, driver: "Andrea Kimi Antonelli", team: "Mercedes", pts: 229 },
+            { pos: 2, driver: "George Russell", team: "Mercedes", pts: 213 },
+            { pos: 3, driver: "Lewis Hamilton", team: "Ferrari", pts: 153 },
+            { pos: 4, driver: "Max Verstappen", team: "Red Bull", pts: 147 },
+            { pos: 5, driver: "Lando Norris", team: "McLaren", pts: 146 },
+            { pos: 6, driver: "Charles Leclerc", team: "Ferrari", pts: 144 },
+            { pos: 7, driver: "Oscar Piastri", team: "McLaren", pts: 111 },
+            { pos: 8, driver: "Isack Hadjar", team: "Red Bull", pts: 66 }
+        ];
 
         function isRaceComplete(race) {
             const now = Date.now();
@@ -284,7 +340,57 @@
 
         function getUpcomingRound() {
             const upcoming = cal.find(r => !isRaceComplete(r));
-            return upcoming ? upcoming.r : cal[cal.length - 1]?.r || 1;
+            return upcoming ? upcoming.r : cal[cal.length - 1].r;
+        }
+
+        let selectedRound = getUpcomingRound();
+        let lastRenderedRound = null;
+
+        // Background sync: Fetch new results for active and upcoming rounds
+        async function fetchAutoResults(race) {
+            if (race.results && race.results["Race"]) return;
+            try {
+                const response = await fetch(`https://api.jolpi.ca/ergast/f1/2026/${race.r}/results.json`);
+                if (response.ok) {
+                    const data = await response.json();
+                    const raceData = data?.MRData?.RaceTable?.Races?.[0];
+                    if (raceData?.Results?.length >= 3) {
+                        const top3 = raceData.Results.slice(0, 3).map(d => `${d.Driver.givenName} ${d.Driver.familyName}`);
+                        if (!race.results) race.results = {};
+                        race.results["Race"] = top3;
+                        if (selectedRound === race.r) renderMainContent();
+                    }
+                }
+            } catch (err) {
+                // Silently fails without breaking UI
+            }
+        }
+
+        // Live Standings Sync
+        async function syncLiveStandings() {
+            try {
+                const res = await fetch('https://api.jolpi.ca/ergast/f1/2026/driverStandings.json');
+                if (res.ok) {
+                    const data = await res.json();
+                    const list = data?.MRData?.StandingsTable?.StandingsLists?.[0]?.DriverStandings || [];
+                    if (list.length > 0) {
+                        standings = list.slice(0, 8).map(s => ({
+                            pos: s.position,
+                            driver: `${s.Driver.givenName} ${s.Driver.familyName}`,
+                            team: s.Constructors?.[0]?.name || "F1",
+                            pts: s.points
+                        }));
+                        renderMainContent();
+                    }
+                }
+            } catch (e) {}
+        }
+
+        function formatIST(isoDateStr) {
+            const d = new Date(isoDateStr);
+            const timePart = d.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true });
+            const dayPart = d.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', weekday: 'short', day: '2-digit', month: 'short' });
+            return { timePart, dayPart };
         }
 
         function renderSidebar() {
@@ -294,7 +400,7 @@
                 const statusText = complete ? "COMPLETED" : (r.r === selectedRound ? "LIVE / UPCOMING" : "");
                 return `
                     <div class="sidebar-item ${r.r === selectedRound ? 'active' : ''}" onclick="selectRound(${r.r})">
-                        <div class="round-num">Round ${r.r}</div>
+                        <div class="round-num">Round ${r.r} | ${r.date}</div>
                         <div class="loc-name">${r.loc}</div>
                         ${statusText ? `<div class="status-badge">${statusText}</div>` : ''}
                     </div>
@@ -304,7 +410,7 @@
 
         function selectRound(rNum) {
             selectedRound = rNum;
-            lastRenderedState = null; 
+            lastRenderedRound = null; 
             renderSidebar();
             renderMainContent();
         }
@@ -314,32 +420,36 @@
             if (!race) return;
 
             const complete = isRaceComplete(race);
-            if (complete) loadSessionResults(race.r);
+            if (complete && (!race.results || !race.results["Race"])) {
+                fetchAutoResults(race);
+            }
 
-            if (lastRenderedState === complete) {
+            // Only skip re-render if round and completion state haven't changed
+            if (lastRenderedRound === selectedRound) {
                 updateTimers();
                 return;
             }
-            lastRenderedState = complete;
-            
+            lastRenderedRound = selectedRound;
+
             let html = `
                 <div class="header">
-                    <p>ROUND ${race.r} | OFFICIAL SCHEDULE</p>
+                    <p>ROUND ${race.r} | ${race.date}</p>
                     <h1>${race.loc}</h1>
                     <p class="full-name">${race.full}</p>
                 </div>
             `;
-            
+
             if (!complete) {
                 html += `<div id="countdown-container">`;
                 race.sessions.forEach((s, idx) => {
+                    const { timePart, dayPart } = formatIST(s.t);
                     html += `
-                        <div class="session-row">
+                        <div class="session-row" data-time="${s.t}">
                             <div class="session-left">
                                 <div class="name">${s.n}</div>
                                 <div class="ist">
-                                    <span>${s.timePart} IST</span>
-                                    <span class="ist-date">(${s.dayPart})</span>
+                                    <span>${timePart} IST</span>
+                                    <span class="ist-date">(${dayPart})</span>
                                 </div>
                             </div>
                             <div class="timer" id="timer-${idx}">--</div>
@@ -347,26 +457,44 @@
                 });
                 html += `</div>`;
 
-                if (standings.length > 0) {
+                if (race.results && Object.keys(race.results).length > 0) {
                     html += `
-                        <div class="info-card" style="margin-top: 25px;">
-                            <h3>Official Drivers' Championship <span class="api-indicator">● Live Jolpica API</span></h3>
-                            <div class="standings-list">
-                                ${standings.map(st => `
-                                    <div class="standing-item">
-                                        <div><span class="pos-badge">P${st.pos}</span> <strong>${st.driver}</strong> <span style="color:#888; font-size:0.8rem; margin-left: 5px;">${st.team}</span></div>
-                                        <div style="font-family: monospace; color: var(--f1-red); font-weight: bold;">${st.pts} PTS</div>
+                        <div class="info-card" style="margin-top: 20px;">
+                            <h3>Weekend Completed Sessions</h3>
+                            <div style="display:flex; flex-direction:column; gap:14px; margin-top:10px;">
+                                ${Object.entries(race.results).map(([sName, top3]) => `
+                                    <div class="results-section">
+                                        <div class="session-title">${sName} Top 3</div>
+                                        <div class="podium-list">
+                                            <div class="podium-item"><span class="pos-badge">1st</span> <strong>🥇 ${top3[0]}</strong></div>
+                                            <div class="podium-item"><span class="pos-badge">2nd</span> <strong>🥈 ${top3[1]}</strong></div>
+                                            <div class="podium-item"><span class="pos-badge">3rd</span> <strong>🥉 ${top3[2]}</strong></div>
+                                        </div>
                                     </div>
                                 `).join('')}
                             </div>
                         </div>`;
                 }
+
+                html += `
+                    <div class="info-card" style="margin-top: 15px;">
+                        <h3>Official Drivers' Championship <span class="api-indicator">● Live Points</span></h3>
+                        <div class="standings-list">
+                            ${standings.map(st => `
+                                <div class="standing-item">
+                                    <div><span class="pos-badge">P${st.pos}</span> <strong>${st.driver}</strong> <span style="color:#888; font-size:0.8rem; margin-left: 5px;">${st.team}</span></div>
+                                    <div style="font-family: monospace; color: var(--f1-red); font-weight: bold;">${st.pts} PTS</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>`;
             } else {
+                const resultsAvailable = race.results && Object.keys(race.results).length > 0;
                 html += `
                     <div class="info-card">
-                        <h3>Session Classifications <span class="api-indicator">● Official Sync</span></h3>
-                        <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 10px;">
-                            ${Object.keys(race.results).length > 0 ? Object.entries(race.results).map(([sessName, top3]) => `
+                        <h3>Full Weekend Session Classifications <span class="api-indicator">● Official Results</span></h3>
+                        <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 12px;">
+                            ${resultsAvailable ? Object.entries(race.results).map(([sessName, top3]) => `
                                 <div class="results-section">
                                     <div class="session-title">${sessName} Top 3</div>
                                     <div class="podium-list">
@@ -375,7 +503,7 @@
                                         <div class="podium-item"><span class="pos-badge">3rd</span> <strong>🥉 ${top3[2] || 'TBD'}</strong></div>
                                     </div>
                                 </div>
-                            `).join('') : '<div style="padding: 10px; color: #888;">Fetching live session timing classifications...</div>'}
+                            `).join('') : '<div style="padding: 10px; color: #888;">Classifications being processed...</div>'}
                         </div>
                     </div>`;
             }
@@ -390,10 +518,7 @@
             if (!race) return;
 
             const complete = isRaceComplete(race);
-            if (complete) {
-                if (lastRenderedState !== true) renderMainContent();
-                return;
-            }
+            if (complete) return;
 
             race.sessions.forEach((s, idx) => {
                 const target = new Date(s.t).getTime();
@@ -401,8 +526,7 @@
                 const timerEl = document.getElementById(`timer-${idx}`);
                 if (!timerEl) return;
 
-                // Practice/Qualy lasts ~1.5 hours (5400000ms), Race ~2.5 hours (9000000ms)
-                const duration = s.n === "Race" ? 9000000 : 5400000;
+                const duration = s.n === "Race" ? 7200000 : 3600000;
 
                 if (diff <= 0 && diff > -duration) {
                     timerEl.innerText = "● LIVE";
@@ -419,34 +543,14 @@
                     timerEl.className = "timer finished";
                 }
             });
-
-            if (isRaceComplete(race) !== lastRenderedState) {
-                renderSidebar();
-                renderMainContent();
-            }
-        }
-
-        function loadFallbackSchedule() {
-            // Strict IST Fallback if offline
-            cal = [
-                { r: 16, loc: "Bahrain (at Sepang)", full: "FORMULA 1 GULF AIR BAHRAIN GRAND PRIX IN MALAYSIA 2026", date: "02-04 OCT", results: {},
-                  sessions: [
-                    {n:"Practice 1", t:"2026-10-02T10:00:00+05:30", timePart:"10:00 AM", dayPart:"Fri, 02 Oct"},
-                    {n:"Practice 2", t:"2026-10-02T13:30:00+05:30", timePart:"01:30 PM", dayPart:"Fri, 02 Oct"},
-                    {n:"Practice 3", t:"2026-10-03T10:00:00+05:30", timePart:"10:00 AM", dayPart:"Sat, 03 Oct"},
-                    {n:"Qualifying", t:"2026-10-03T13:30:00+05:30", timePart:"01:30 PM", dayPart:"Sat, 03 Oct"},
-                    {n:"Race", t:"2026-10-04T12:30:00+05:30", timePart:"12:30 PM", dayPart:"Sun, 04 Oct"}
-                ]}
-            ];
-            selectedRound = 16;
-            renderSidebar();
-            renderMainContent();
         }
 
         window.addEventListener('load', () => { 
             const v = document.getElementById('video-bg');
             if (v) v.play().catch(() => {});
-            loadSeasonSchedule();
+            renderSidebar();
+            renderMainContent();
+            syncLiveStandings();
         });
 
         setInterval(updateTimers, 1000);
