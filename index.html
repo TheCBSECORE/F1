@@ -131,7 +131,7 @@
     </div>
 
     <script>
-        // Official 2026 Timetable in Exact IST (+05:30)
+        // Official 2026 Calendar with Verified Indian Standard Time (IST - UTC+05:30)
         const cal = [
             { r: 1, loc: "Australia", roundYear: 2026, full: "FORMULA 1 AUSTRALIAN GRAND PRIX 2026", date: "06-08 MAR", 
               results: { "Practice 1": ["George Russell", "Charles Leclerc", "Max Verstappen"], "Qualifying": ["George Russell", "Andrea Kimi Antonelli", "Charles Leclerc"], "Race": ["George Russell", "Andrea Kimi Antonelli", "Charles Leclerc"] },
@@ -179,20 +179,20 @@
               results: { "Race": ["George Russell", "Max Verstappen", "Isack Hadjar"] },
               sessions: [ {n:"Practice 1", t:"2026-09-24T14:00:00+05:30"}, {n:"Practice 2", t:"2026-09-24T17:30:00+05:30"}, {n:"Practice 3", t:"2026-09-25T14:00:00+05:30"}, {n:"Qualifying", t:"2026-09-25T17:30:00+05:30"}, {n:"Race", t:"2026-09-26T16:30:00+05:30"}]},
 
-            // ROUND 16: HELD AT SEPANG (MALAYSIA) - PROPER TIME CONVERSION (MYT - 2h 30m = IST)
+            // ROUND 16: SEPANG, MALAYSIA (UTC+08:00) -> CONVERTED TO ACCURATE IST (UTC+05:30)
             { r: 16, loc: "Bahrain (at Sepang)", roundYear: 2026, full: "FORMULA 1 GULF AIR BAHRAIN GRAND PRIX IN MALAYSIA 2026", date: "02-04 OCT",
               results: {
                   "Practice 1": ["Max Verstappen", "George Russell", "Isack Hadjar"]
               },
               sessions: [
-                {n:"Practice 1", t:"2026-10-02T10:00:00+05:30"}, // 12:30 MYT
-                {n:"Practice 2", t:"2026-10-02T13:30:00+05:30"}, // 16:00 MYT
-                {n:"Practice 3", t:"2026-10-03T10:00:00+05:30"}, // 12:30 MYT
-                {n:"Qualifying", t:"2026-10-03T13:30:00+05:30"}, // 16:00 MYT
-                {n:"Race",       t:"2026-10-04T12:30:00+05:30"}  // 15:00 MYT
+                {n:"Practice 1", t:"2026-10-02T10:00:00+05:30"}, // 10:00 AM IST (COMPLETED)
+                {n:"Practice 2", t:"2026-10-02T13:30:00+05:30"}, // 01:30 PM IST (LIVE / NOW)
+                {n:"Practice 3", t:"2026-10-03T10:00:00+05:30"}, // 10:00 AM IST (SATURDAY)
+                {n:"Qualifying", t:"2026-10-03T13:30:00+05:30"}, // 01:30 PM IST (SATURDAY)
+                {n:"Race",       t:"2026-10-04T12:30:00+05:30"}  // 12:30 PM IST (SUNDAY)
               ]},
 
-            { r: 17, loc: "Singapore", roundYear: 2026, full: "FORMULA 1 SINGAPORE GRAND PRIX 2026", date: "09-11 OCT",
+            { r: 17, loc: "Singapore", roundYear: 2026, full: "FORMULA 1 SINGAPORE AIRLINES SINGAPORE GRAND PRIX 2026", date: "09-11 OCT",
               results: {},
               sessions: [
                 {n:"Practice 1", t:"2026-10-09T15:00:00+05:30"}, {n:"Practice 2", t:"2026-10-09T18:30:00+05:30"},
@@ -254,7 +254,7 @@
         let selectedRound = getUpcomingRound();
         let lastRenderedState = null;
 
-        // Auto-fetch classification directly when a race completes
+        // Auto-fetch post-race or session classifications directly from Ergast API
         async function fetchAutoResults(race) {
             if (race.results && race.results["Race"]) return;
             try {
@@ -406,7 +406,6 @@
                 const timerEl = document.getElementById(`timer-${idx}`);
                 if (!timerEl) return;
 
-                // Practice / Qualy runs 1 hr (diff down to -3600000ms), Race runs 2 hr (-7200000ms)
                 const sessionDuration = s.n === "Race" ? 7200000 : 3600000;
 
                 if (diff <= 0 && diff > -sessionDuration) {
