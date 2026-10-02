@@ -6,7 +6,7 @@
     <title>F1 2026 Tracker</title>
     <style>
         :root { --f1-red: #e10600; --bg-dark: #050505; }
-        body, html { margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg-dark); color: white; height: 100vh; }
+        body, html { margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg-dark); color: white; height: 100vh; overflow: hidden; }
         
         /* Video Background */
         #video-bg {
@@ -388,20 +388,26 @@
             { pos: 8, driver: "Isack Hadjar", team: "Red Bull", pts: 86 }
         ];
 
+        function isRaceComplete(race) {
+            const now = new Date();
+            const lastSessionEnd = new Date(race.sessions[race.sessions.length - 1].t).getTime() + (2.5 * 3600 * 1000);
+            return now.getTime() > lastSessionEnd;
+        }
+
         function getUpcomingRound() {
             const now = new Date();
-            const upcoming = cal.find(r => new Date(r.sessions[r.sessions.length - 1].t) > now);
+            const upcoming = cal.find(r => !isRaceComplete(r));
             return upcoming ? upcoming.r : cal[cal.length - 1].r;
         }
 
         let selectedRound = getUpcomingRound();
+        let lastRenderedState = null;
 
         function renderSidebar() {
-            const now = new Date();
             const sidebar = document.getElementById('sidebar');
             sidebar.innerHTML = cal.map(r => {
-                const isUpcoming = new Date(r.sessions[r.sessions.length - 1].t) > now;
-                const statusText = isUpcoming ? (r.r === selectedRound && isUpcoming ? "UPCOMING" : "") : "COMPLETED";
+                const complete = isRaceComplete(r);
+                const statusText = complete ? "COMPLETED" : (r.r === selectedRound ? "UPCOMING" : "");
                 return `
                     <div class="sidebar-item ${r.r === selectedRound ? 'active' : ''}" onclick="selectRound(${r.r})">
                         <div class="round-num">Round ${r.r} | ${r.date}</div>
@@ -414,19 +420,25 @@
 
         function selectRound(rNum) {
             selectedRound = rNum;
+            lastRenderedState = null; // force layout re-render
             renderSidebar();
             renderMainContent();
         }
 
-        // Renders the static layout once when changing rounds
         function renderMainContent() {
-            const now = new Date();
             const race = cal.find(r => r.r === selectedRound);
-            const isUpcoming = new Date(race.sessions[race.sessions.length - 1].t) > now;
+            const complete = isRaceComplete(race);
+            
+            // Avoid re-rendering main layout DOM needlessly if completion status hasn't changed
+            if (lastRenderedState === complete) {
+                updateTimers();
+                return;
+            }
+            lastRenderedState = complete;
             
             let html = `<div class="header"><p>ROUND ${race.r} | ${race.date}</p><h1>${race.loc}</h1><p class="full-name">${race.full}</p></div>`;
             
-            if (isUpcoming) {
+            if (!complete) {
                 html += `<div id="countdown-container">`;
                 race.sessions.forEach((s, idx) => {
                     const target = new Date(s.t);
@@ -460,7 +472,7 @@
                                         <div class="session-title">${sessName}</div>
                                         <div class="podium-list">
                                             <div class="podium-item"><span class="pos-badge">1st</span> <strong>🥇 ${top3[0]}</strong></div>
-                                            <div class="podium-item"><span class="pos-badge">2nd</span> <strong>🥈 ${top3[1]}</strong></div>
+                                            <div class="nodium-item podium-item"><span class="pos-badge">2nd</span> <strong>🥈 ${top3[1]}</strong></div>
                                             <div class="podium-item"><span class="pos-badge">3rd</span> <strong>🥉 ${top3[2]}</strong></div>
                                         </div>
                                     </div>
@@ -470,16 +482,20 @@
             }
 
             document.getElementById('ui').innerHTML = html;
-            updateTimers(); // Immediate update
+            updateTimers();
         }
 
-        // Only updates text contents of timers every second without destroying the DOM elements (allowing scrolling)
         function updateTimers() {
             const now = new Date();
             const race = cal.find(r => r.r === selectedRound);
-            const isUpcoming = new Date(race.sessions[race.sessions.length - 1].t) > now;
+            const complete = isRaceComplete(race);
 
-            if (!isUpcoming) return;
+            renderSidebar(); // Keep sidebar states updated automatically
+
+            if (complete) {
+                if (lastRenderedState !== true) renderMainContent();
+                return;
+            }
 
             race.sessions.forEach((s, idx) => {
                 const target = new Date(s.t);
@@ -500,6 +516,11 @@
                     timerEl.innerText = txt;
                 }
             });
+
+            // Auto-refresh layout if status flipped to complete while looking at the page
+            if (isRaceComplete(race) !== lastRenderedState) {
+                renderMainContent();
+            }
         }
 
         window.addEventListener('load', () => { 
