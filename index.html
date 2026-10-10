@@ -9,11 +9,20 @@
         body, html { margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg-dark); color: white; height: 100vh; overflow: hidden; }
         
         #video-bg {
-            position: fixed; right: 0; bottom: 0; min-width: 100%; min-height: 100%;
-            z-index: -10; filter: brightness(0.3); object-fit: cover;
+            position: fixed;
+            right: 0;
+            bottom: 0;
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            z-index: -10;
+            filter: brightness(0.3);
+            object-fit: cover;
+            pointer-events: none;
         }
 
-        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,0.85)); z-index: -5; }
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,0.85)); z-index: -5; pointer-events: none; }
 
         .app-layout { display: flex; height: 100vh; width: 100vw; box-sizing: border-box; z-index: 10; position: relative; overflow: hidden; }
 
@@ -106,12 +115,8 @@
         }
         
         .api-indicator { font-size: 0.65rem; color: #10b981; text-transform: none; font-weight: normal; }
-        .results-section { margin-bottom: 16px; }
-        .results-section:last-child { margin-bottom: 0; }
-        .session-title { font-size: 0.8rem; text-transform: uppercase; color: #f59e0b; letter-spacing: 1px; margin-bottom: 8px; font-weight: bold; }
-        
-        .podium-list, .standings-list { display: flex; flex-direction: column; gap: 6px; }
-        .podium-item, .standing-item { 
+        .standings-list { display: flex; flex-direction: column; gap: 6px; }
+        .standing-item { 
             display: flex; justify-content: space-between; align-items: center; 
             background: rgba(255,255,255,0.04); padding: 9px 14px; border-radius: 4px; font-size: 0.9rem; 
             border: 1px solid rgba(255, 255, 255, 0.03);
@@ -138,10 +143,7 @@
         let cal = [];
         let standings = [];
         let selectedRound = null;
-        let lastRenderedRound = null;
-        const resultsCache = {};
 
-        // Convert UTC to Indian Standard Time (IST - Asia/Kolkata)
         function formatToIST(dateStr, timeStr) {
             const cleanTime = timeStr ? (timeStr.endsWith('Z') ? timeStr : timeStr + 'Z') : '12:00:00Z';
             const d = new Date(`${dateStr}T${cleanTime}`);
@@ -150,7 +152,6 @@
             return { iso: d.toISOString(), timePart, dayPart };
         }
 
-        // Initialize calendar by fetching official API schedule
         async function initSchedule() {
             try {
                 const res = await fetch(`https://api.jolpi.ca/ergast/f1/${seasonYear}.json`);
@@ -194,7 +195,6 @@
                     };
                 });
             } catch (e) {
-                // Verified 2026 IST Fallback in case of network throttle
                 cal = [
                     { r: 1, loc: "Australia", full: "FORMULA 1 AUSTRALIAN GRAND PRIX 2026", date: "06-08 MAR", sessions: [{n:"Practice 1", t:"2026-03-06T07:00:00+05:30"}, {n:"Practice 2", t:"2026-03-06T10:30:00+05:30"}, {n:"Practice 3", t:"2026-03-07T07:00:00+05:30"}, {n:"Qualifying", t:"2026-03-07T10:30:00+05:30"}, {n:"Race", t:"2026-03-08T09:30:00+05:30"}]},
                     { r: 2, loc: "China", full: "FORMULA 1 CHINESE GRAND PRIX 2026", date: "13-15 MAR", sessions: [{n:"Practice 1", t:"2026-03-13T09:00:00+05:30"}, {n:"Sprint Qualy", t:"2026-03-13T13:00:00+05:30"}, {n:"Sprint", t:"2026-03-14T08:30:00+05:30"}, {n:"Qualifying", t:"2026-03-14T12:30:00+05:30"}, {n:"Race", t:"2026-03-15T12:30:00+05:30"}]},
@@ -214,7 +214,6 @@
             fetchStandings();
         }
 
-        // Live API Standings fetcher
         async function fetchStandings() {
             try {
                 const res = await fetch(`https://api.jolpi.ca/ergast/f1/${seasonYear}/driverStandings.json`);
@@ -232,39 +231,6 @@
             } catch (err) {
                 console.warn("Standings live fetch:", err);
             }
-        }
-
-        // Fast parallel fetcher for past results
-        async function fetchRoundResults(roundNum) {
-            if (resultsCache[roundNum]) return resultsCache[roundNum];
-
-            const results = {};
-            try {
-                // Fetch Race, Qualifying & Sprint in parallel
-                const [raceRes, qualRes, spRes] = await Promise.allSettled([
-                    fetch(`https://api.jolpi.ca/ergast/f1/${seasonYear}/${roundNum}/results.json`).then(r => r.json()),
-                    fetch(`https://api.jolpi.ca/ergast/f1/${seasonYear}/${roundNum}/qualifying.json`).then(r => r.json()),
-                    fetch(`https://api.jolpi.ca/ergast/f1/${seasonYear}/${roundNum}/sprint.json`).then(r => r.json())
-                ]);
-
-                if (raceRes.status === "fulfilled") {
-                    const list = raceRes.value?.MRData?.RaceTable?.Races?.[0]?.Results;
-                    if (list && list.length >= 3) results["Race"] = list.slice(0, 3).map(d => `${d.Driver.givenName} ${d.Driver.familyName}`);
-                }
-                if (qualRes.status === "fulfilled") {
-                    const list = qualRes.value?.MRData?.RaceTable?.Races?.[0]?.QualifyingResults;
-                    if (list && list.length >= 3) results["Qualifying"] = list.slice(0, 3).map(d => `${d.Driver.givenName} ${d.Driver.familyName}`);
-                }
-                if (spRes.status === "fulfilled") {
-                    const list = spRes.value?.MRData?.RaceTable?.Races?.[0]?.SprintResults;
-                    if (list && list.length >= 3) results["Sprint"] = list.slice(0, 3).map(d => `${d.Driver.givenName} ${d.Driver.familyName}`);
-                }
-            } catch (e) {
-                console.warn("Session classification fetch:", e);
-            }
-
-            resultsCache[roundNum] = results;
-            return results;
         }
 
         function isRaceComplete(race) {
@@ -296,24 +262,13 @@
 
         function selectRound(rNum) {
             selectedRound = rNum;
-            lastRenderedRound = null;
             renderSidebar();
             renderMainContent();
         }
 
-        async function renderMainContent() {
+        function renderMainContent() {
             const race = cal.find(r => r.r === selectedRound);
             if (!race) return;
-
-            const complete = isRaceComplete(race);
-            let results = resultsCache[race.r] || null;
-
-            if (complete && !results) {
-                // Instant non-blocking fetch
-                fetchRoundResults(race.r).then(() => {
-                    if (selectedRound === race.r) renderMainContent();
-                });
-            }
 
             let html = `
                 <div class="header">
@@ -321,54 +276,35 @@
                     <h1>${race.loc}</h1>
                     <p class="full-name">${race.full}</p>
                 </div>
+                <div id="countdown-container">
             `;
 
-            if (!complete) {
-                html += `<div id="countdown-container">`;
-                race.sessions.forEach((s, idx) => {
-                    html += `
-                        <div class="session-row">
-                            <div class="session-left">
-                                <div class="name">${s.n}</div>
-                                <div class="ist">
-                                    <span>${s.timePart} IST</span>
-                                    <span class="ist-date">(${s.dayPart})</span>
-                                </div>
-                            </div>
-                            <div class="timer" id="timer-${idx}">--</div>
-                        </div>`;
-                });
-                html += `</div>`;
-
-                if (standings.length > 0) {
-                    html += `
-                        <div class="info-card" style="margin-top: 25px;">
-                            <h3>Official Drivers' Championship <span class="api-indicator">● Official API</span></h3>
-                            <div class="standings-list">
-                                ${standings.map(st => `
-                                    <div class="standing-item">
-                                        <div><span class="pos-badge">P${st.pos}</span> <strong>${st.driver}</strong> <span style="color:#888; font-size:0.8rem; margin-left: 5px;">${st.team}</span></div>
-                                        <div style="font-family: monospace; color: var(--f1-red); font-weight: bold;">${st.pts} PTS</div>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>`;
-                }
-            } else {
+            race.sessions.forEach((s, idx) => {
                 html += `
-                    <div class="info-card">
-                        <h3>Session Classifications <span class="api-indicator">● Auto-Loaded</span></h3>
-                        <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 10px;">
-                            ${results && Object.keys(results).length > 0 ? Object.entries(results).map(([sessName, top3]) => `
-                                <div class="results-section">
-                                    <div class="session-title">${sessName} Top 3</div>
-                                    <div class="podium-list">
-                                        <div class="podium-item"><span class="pos-badge">1st</span> <strong>🥇 ${top3[0] || 'TBD'}</strong></div>
-                                        <div class="podium-item"><span class="pos-badge">2nd</span> <strong>🥈 ${top3[1] || 'TBD'}</strong></div>
-                                        <div class="podium-item"><span class="pos-badge">3rd</span> <strong>🥉 ${top3[2] || 'TBD'}</strong></div>
-                                    </div>
+                    <div class="session-row">
+                        <div class="session-left">
+                            <div class="name">${s.n}</div>
+                            <div class="ist">
+                                <span>${s.timePart} IST</span>
+                                <span class="ist-date">(${s.dayPart})</span>
+                            </div>
+                        </div>
+                        <div class="timer" id="timer-${idx}">--</div>
+                    </div>`;
+            });
+            html += `</div>`;
+
+            if (standings.length > 0) {
+                html += `
+                    <div class="info-card" style="margin-top: 25px;">
+                        <h3>Official Drivers' Championship <span class="api-indicator">● Official API</span></h3>
+                        <div class="standings-list">
+                            ${standings.map(st => `
+                                <div class="standing-item">
+                                    <div><span class="pos-badge">P${st.pos}</span> <strong>${st.driver}</strong> <span style="color:#888; font-size:0.8rem; margin-left: 5px;">${st.team}</span></div>
+                                    <div style="font-family: monospace; color: var(--f1-red); font-weight: bold;">${st.pts} PTS</div>
                                 </div>
-                            `).join('') : '<div style="padding: 10px; color: #aaa;">Syncing finished race classifications via API...</div>'}
+                            `).join('')}
                         </div>
                     </div>`;
             }
@@ -380,7 +316,7 @@
         function updateTimers() {
             const now = Date.now();
             const race = cal.find(r => r.r === selectedRound);
-            if (!race || isRaceComplete(race)) return;
+            if (!race) return;
 
             race.sessions.forEach((s, idx) => {
                 const target = new Date(s.t).getTime();
